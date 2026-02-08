@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/api";
 
@@ -32,6 +32,102 @@ type TemplateExercise = {
   order: number;
   last_sets: SetEntry[];
 };
+
+function SetRow({
+  set: s,
+  editingSetId,
+  editingSetReps,
+  editingSetWeight,
+  setEditingSetId,
+  setEditingSetReps,
+  setEditingSetWeight,
+  onSave,
+  onDelete,
+}: {
+  set: SetEntry;
+  editingSetId: number | null;
+  editingSetReps: string;
+  editingSetWeight: string;
+  setEditingSetId: (id: number | null) => void;
+  setEditingSetReps: (v: string) => void;
+  setEditingSetWeight: (v: string) => void;
+  onSave: (set: SetEntry) => void;
+  onDelete: (set: SetEntry) => void;
+}) {
+  const editRef = useRef<HTMLDivElement>(null);
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      if (editRef.current && !editRef.current.contains(document.activeElement)) {
+        onSave(s);
+      }
+    }, 0);
+  };
+
+  if (editingSetId === s.id) {
+    return (
+      <div className="flex items-center gap-4 text-sm text-stone-700">
+        <span className="w-8">Set {s.order}</span>
+        <div ref={editRef} className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            value={editingSetReps}
+            onChange={(e) => setEditingSetReps(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSave(s);
+              if (e.key === "Escape") setEditingSetId(null);
+            }}
+            autoFocus
+            className="w-16 px-1.5 py-0.5 rounded border border-stone-300 text-sm"
+          />
+          <span>reps</span>
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            value={editingSetWeight}
+            onChange={(e) => setEditingSetWeight(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSave(s);
+              if (e.key === "Escape") setEditingSetId(null);
+            }}
+            placeholder="Weight"
+            className="w-16 px-1.5 py-0.5 rounded border border-stone-300 text-sm"
+          />
+          <span>lbs</span>
+          <button
+            type="button"
+            onClick={() => onDelete(s)}
+            className="text-red-500 hover:text-red-600 text-xs"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-4 text-sm text-stone-700">
+      <span className="w-8">Set {s.order}</span>
+      <div
+        onClick={() => {
+          setEditingSetId(s.id);
+          setEditingSetReps(String(s.reps));
+          setEditingSetWeight(s.weight != null && s.weight !== "" ? String(s.weight) : "");
+        }}
+        className="flex items-center gap-2 cursor-pointer hover:text-amber-600 transition"
+        title="Click to edit"
+      >
+        <span>{s.reps} reps</span>
+        {s.weight != null && <span>{s.weight} lbs</span>}
+      </div>
+    </div>
+  );
+}
 
 export default function WorkoutDetail({
   workoutId,
@@ -280,64 +376,18 @@ export default function WorkoutDetail({
                   </div>
                   <div className="space-y-2">
                     {pe.sets.map((s) => (
-                      <div key={s.id} className="flex items-center gap-4 text-sm text-stone-700">
-                        <span className="w-8">Set {s.order}</span>
-                        {editingSetId === s.id ? (
-                          <>
-                            <input
-                              type="number"
-                              min="0"
-                              value={editingSetReps}
-                              onChange={(e) => setEditingSetReps(e.target.value)}
-                              onBlur={() => handleSaveSet(s)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveSet(s);
-                                if (e.key === "Escape") setEditingSetId(null);
-                              }}
-                              autoFocus
-                              className="w-16 px-1.5 py-0.5 rounded border border-stone-300 text-sm"
-                            />
-                            <span>reps</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              value={editingSetWeight}
-                              onChange={(e) => setEditingSetWeight(e.target.value)}
-                              onBlur={() => handleSaveSet(s)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveSet(s);
-                                if (e.key === "Escape") setEditingSetId(null);
-                              }}
-                              placeholder="Weight"
-                              className="w-16 px-1.5 py-0.5 rounded border border-stone-300 text-sm"
-                            />
-                            <span>lbs</span>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSet(s)}
-                              className="text-red-500 hover:text-red-600 text-xs"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        ) : (
-                          <div
-                            onClick={() => {
-                              setEditingSetId(s.id);
-                              setEditingSetReps(String(s.reps));
-                              setEditingSetWeight(
-                                s.weight != null && s.weight !== "" ? String(s.weight) : ""
-                              );
-                            }}
-                            className="flex items-center gap-2 cursor-pointer hover:text-amber-600 transition"
-                            title="Click to edit"
-                          >
-                            <span>{s.reps} reps</span>
-                            {s.weight != null && <span>{s.weight} lbs</span>}
-                          </div>
-                        )}
-                      </div>
+                      <SetRow
+                        key={s.id}
+                        set={s}
+                        editingSetId={editingSetId}
+                        editingSetReps={editingSetReps}
+                        editingSetWeight={editingSetWeight}
+                        setEditingSetId={setEditingSetId}
+                        setEditingSetReps={setEditingSetReps}
+                        setEditingSetWeight={setEditingSetWeight}
+                        onSave={handleSaveSet}
+                        onDelete={handleDeleteSet}
+                      />
                     ))}
                     {addingSetFor === pe.id ? (
                       <form

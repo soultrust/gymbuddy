@@ -86,7 +86,7 @@ export default function WorkoutsList({
   useEffect(() => {
     if (showCreateForm) {
       fetchTemplate();
-      setCreateName(formatDate(createDate));
+      setCreateName(createDate);
     }
   }, [showCreateForm, fetchTemplate, createDate]);
 
