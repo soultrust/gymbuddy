@@ -55,8 +55,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     # Local
+    "accounts.apps.AccountsConfig",
     "workouts.apps.WorkoutsConfig",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

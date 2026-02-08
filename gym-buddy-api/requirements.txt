@@ -3,4 +3,5 @@ Django==6.0.2
 djangorestframework==3.16.1
 django-cors-headers==4.3.1
 firebase-admin==6.6.0
+gunicorn==23.0.0
 sqlparse==0.5.5

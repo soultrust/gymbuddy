@@ -14,13 +14,13 @@ User = get_user_model()
 class WorkoutSessionAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            email="test@example.com", username="testuser", password="testpass123"
         )
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
         self.other_user = User.objects.create_user(
-            username="otheruser", password="otherpass123"
+            email="other@example.com", username="otheruser", password="otherpass123"
         )
 
     def test_list_workouts_requires_auth(self):
@@ -75,7 +75,7 @@ class WorkoutSessionAPITests(APITestCase):
 class WorkoutExercisesAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            email="test@example.com", username="testuser", password="testpass123"
         )
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -118,7 +118,7 @@ class WorkoutExercisesAPITests(APITestCase):
 class PerformedExerciseSetsAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            email="test@example.com", username="testuser", password="testpass123"
         )
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -154,7 +154,7 @@ class PerformedExerciseSetsAPITests(APITestCase):
 class SetEntryAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            email="test@example.com", username="testuser", password="testpass123"
         )
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
@@ -189,7 +189,7 @@ class SetEntryAPITests(APITestCase):
 class TemplateAndPreviousExercisesAPITests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+            email="test@example.com", username="testuser", password="testpass123"
         )
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")

@@ -3,6 +3,10 @@ Firebase token verification and Django token exchange.
 
 Set GOOGLE_APPLICATION_CREDENTIALS to the path of your Firebase service account JSON,
 or place it at gym-buddy-api/firebase-service-account.json
+
+To add OAuth2 providers (Google, Apple, etc.): verify the provider's token, extract
+provider_uid and email, then use UserIdentity to find or create the user - same pattern
+as below. Add UserIdentity.Provider entries for each new provider.
 """
 
 import logging
@@ -13,11 +17,13 @@ logger = logging.getLogger(__name__)
 
 from django.contrib.auth import get_user_model
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+
+from accounts.models import UserIdentity
 
 User = get_user_model()
 
@@ -63,13 +69,25 @@ def exchange_firebase_token(request: Request) -> Response:
                 {"detail": "Invalid token"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        user, created = User.objects.get_or_create(
-            username=email,
-            defaults={"email": email},
-        )
-        if created:
-            user.set_unusable_password()
-            user.save()
+
+        identity = UserIdentity.objects.filter(
+            provider=UserIdentity.Provider.FIREBASE, provider_uid=uid
+        ).first()
+        if identity:
+            user = identity.user
+        else:
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={"username": email},
+            )
+            if created:
+                user.set_unusable_password()
+                user.save()
+            UserIdentity.objects.get_or_create(
+                user=user,
+                provider=UserIdentity.Provider.FIREBASE,
+                provider_uid=uid,
+            )
         token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
     except Exception as e:
