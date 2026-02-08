@@ -1,47 +1,85 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  type User as FirebaseUser,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { apiRequest } from "@/lib/api";
 
 const TOKEN_KEY = "gymbuddy_token";
 
 type AuthContextType = {
   token: string | null;
+  firebaseUser: FirebaseUser | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+async function exchangeFirebaseToken(idToken: string): Promise<string> {
+  const data = await apiRequest<{ token: string }>("/auth/firebase-token/", {
+    method: "POST",
+    body: { id_token: idToken },
+    token: undefined,
+  });
+  return data.token;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setToken(localStorage.getItem(TOKEN_KEY));
-    setIsLoading(false);
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      setFirebaseUser(user);
+      if (user) {
+        try {
+          const idToken = await user.getIdToken();
+          const djangoToken = await exchangeFirebaseToken(idToken);
+          localStorage.setItem(TOKEN_KEY, djangoToken);
+          setToken(djangoToken);
+        } catch {
+          setToken(null);
+          localStorage.removeItem(TOKEN_KEY);
+        }
+      } else {
+        setToken(null);
+        localStorage.removeItem(TOKEN_KEY);
+      }
+      setIsLoading(false);
+    });
+    return () => unsub();
   }, []);
 
-  const login = async (username: string, password: string) => {
-    const data = await apiRequest<{ token: string }>("/auth/token/", {
-      method: "POST",
-      body: { username, password },
-    });
-    localStorage.setItem(TOKEN_KEY, data.token);
-    setToken(data.token);
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUp = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
+    await firebaseSignOut(auth);
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ token, firebaseUser, isLoading, login, signUp, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");

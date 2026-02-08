@@ -2,24 +2,29 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginForm() {
-  const { login } = useAuth();
-  const [username, setUsername] = useState("");
+  const { login, signUp } = useAuth();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password) {
-      setError("Enter username and password");
+    if (!email.trim() || !password) {
+      setError("Enter email and password");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      await login(username.trim(), password);
+      if (isSignUp) {
+        await signUp(email.trim(), password);
+      } else {
+        await login(email.trim(), password);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
       setLoading(false);
     }
@@ -30,17 +35,17 @@ export default function LoginForm() {
       <h1 className="text-3xl font-bold text-stone-900 tracking-tight">Gym Buddy</h1>
       <p className="text-stone-500 -mt-2">Sign in to track your workouts</p>
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-stone-700 mb-1">
-          Username
+        <label htmlFor="email" className="block text-sm font-medium text-stone-700 mb-1">
+          Email
         </label>
         <input
-          id="username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full px-4 py-3 rounded-lg border border-stone-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition"
-          placeholder="Username"
-          autoComplete="username"
+          placeholder="you@example.com"
+          autoComplete="email"
           autoCapitalize="off"
         />
       </div>
@@ -64,7 +69,23 @@ export default function LoginForm() {
         disabled={loading}
         className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition disabled:opacity-70 disabled:cursor-not-allowed"
       >
-        {loading ? "Signing in…" : "Log in"}
+        {loading
+          ? isSignUp
+            ? "Creating account…"
+            : "Signing in…"
+          : isSignUp
+          ? "Create account"
+          : "Sign in"}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setIsSignUp(!isSignUp);
+          setError(null);
+        }}
+        className="text-sm text-stone-500 hover:text-stone-700"
+      >
+        {isSignUp ? "Already have an account? Sign in" : "Create an account"}
       </button>
     </form>
   );
