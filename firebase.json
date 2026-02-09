@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "gym-buddy-web/dist",
+    "public": "gymbuddy-web/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   }
 }

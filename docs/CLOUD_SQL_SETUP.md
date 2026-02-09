@@ -63,7 +63,7 @@ export DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@PUBLIC_IP:5432/gymbuddy
 Then run migrations:
 
 ```bash
-cd gym-buddy-api
+cd gymbuddy-api
 python manage.py migrate
 python manage.py createsuperuser
 ```

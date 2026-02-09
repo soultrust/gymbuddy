@@ -2,7 +2,7 @@
 
 ## Step 1: Rebuild and Deploy
 
-From `gym-buddy-api`:
+From `gymbuddy-api`:
 
 ```bash
 gcloud builds submit --tag gcr.io/soultrust-gymbuddy/gymbuddy-api

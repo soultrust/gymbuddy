@@ -1,5 +1,5 @@
-# Build from gym-buddy-api directory:
-#   cd gym-buddy-api
+# Build from gymbuddy-api directory:
+#   cd gymbuddy-api
 #   gcloud builds submit --tag gcr.io/soultrust-gymbuddy/gymbuddy-api
 
 FROM python:3.13-slim

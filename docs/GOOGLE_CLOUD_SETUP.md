@@ -72,10 +72,10 @@ gcloud services enable cloudbuild.googleapis.com run.googleapis.com
 
 ### 3.3 Build and Deploy
 
-The project includes a `Dockerfile` and `.dockerignore` in `gym-buddy-api/`. From the **gym-buddy** project root:
+The project includes a `Dockerfile` and `.dockerignore` in `gymbuddy-api/`. From the **gymbuddy** project root:
 
 ```bash
-cd gym-buddy-api
+cd gymbuddy-api
 gcloud run deploy gymbuddy-api \
   --source . \
   --region us-central1 \
@@ -143,7 +143,7 @@ firebase login
 
 ### 4.2 Configure Firebase Hosting
 
-1. From the **gym-buddy** project root, run:
+1. From the **gymbuddy** project root, run:
 
 ```bash
 firebase init hosting
@@ -152,7 +152,7 @@ firebase init hosting
 2. When prompted:
 
    - Select your Firebase project (e.g. `soultrust-gymbuddy`).
-   - **Public directory:** `gym-buddy-web/dist`
+   - **Public directory:** `gymbuddy-web/dist`
    - **Single-page app:** Yes
    - **Overwrite index.html:** No (if it exists)
 
@@ -161,7 +161,7 @@ firebase init hosting
 ```json
 {
   "hosting": {
-    "public": "gym-buddy-web/dist",
+    "public": "gymbuddy-web/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   }
 }
@@ -169,7 +169,7 @@ firebase init hosting
 
 ### 4.3 Point the Web App to the Cloud Run API
 
-Before building for production, create `gym-buddy-web/.env.production`:
+Before building for production, create `gymbuddy-web/.env.production`:
 
 ```
 VITE_API_BASE_URL=https://gymbuddy-api-xxxxx-uc.a.run.app/api/v1
@@ -180,13 +180,13 @@ Replace `gymbuddy-api-xxxxx-uc.a.run.app` with your actual Cloud Run URL from st
 ### 4.4 Build and Deploy
 
 ```bash
-cd gym-buddy-web
+cd gymbuddy-web
 npm run build
 cd ..
 firebase deploy --only hosting
 ```
 
-Run these from the **gym-buddy** project root (the parent of `gym-buddy-web`). The output will show your hosting URL, e.g. `https://your-project.web.app`.
+Run these from the **gymbuddy** project root (the parent of `gymbuddy-web`). The output will show your hosting URL, e.g. `https://your-project.web.app`.
 
 ---
 
@@ -194,7 +194,7 @@ Run these from the **gym-buddy** project root (the parent of `gym-buddy-web`). T
 
 ### 5.1 Update Django Settings for Production
 
-In `gym-buddy-api/django_project/settings.py`, set:
+In `gymbuddy-api/django_project/settings.py`, set:
 
 - **ALLOWED_HOSTS** – Add your Cloud Run host, e.g. `*.run.app` or the exact hostname.
 - **CORS_ALLOWED_ORIGINS** – Add your Firebase Hosting URL (e.g. `https://your-project.web.app`).

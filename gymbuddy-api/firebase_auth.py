@@ -2,7 +2,7 @@
 Firebase token verification and Django token exchange.
 
 Set GOOGLE_APPLICATION_CREDENTIALS to the path of your Firebase service account JSON,
-or place it at gym-buddy-api/firebase-service-account.json
+or place it at gymbuddy-api/firebase-service-account.json
 
 To add OAuth2 providers (Google, Apple, etc.): verify the provider's token, extract
 provider_uid and email, then use UserIdentity to find or create the user - same pattern

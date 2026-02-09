@@ -1,5 +1,6 @@
 .venv/
 node_modules/
+.firebase/
 db.sqlite3
-gym-buddy-api/firebase-service-account.json
-gym-buddy-api/*-firebase-adminsdk-*.json
+gymbuddy-api/firebase-service-account.json
+gymbuddy-api/*-firebase-adminsdk-*.json
