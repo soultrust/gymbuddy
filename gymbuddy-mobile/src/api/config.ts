@@ -1,28 +1,27 @@
-import { Platform } from 'react-native'
-import Constants from 'expo-constants'
+const LIVE_API_BASE = 'https://gymbuddy-api-1038994855355.us-central1.run.app'
 
-// Get API host: use EXPO_PUBLIC_API_HOST, or dev server host (physical device), or emulator/simulator defaults
-const getBaseUrl = () => {
-  if (!__DEV__) return 'https://your-api.com'
+// Get API base URL (no /api/v1). Defaults to live Cloud Run; use env to point at local API.
+const getBaseUrl = (): string => {
+  // Explicit override: point at a different API (e.g. local)
+  const explicitUrl =
+    typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL
+  if (explicitUrl) {
+    return String(explicitUrl)
+      .replace(/\/api\/v1\/?$/, '')
+      .replace(/\/$/, '')
+  }
 
+  // Use local API only when explicitly set (e.g. EXPO_PUBLIC_API_HOST=192.168.1.x)
   const envHost =
     typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_HOST
-  if (envHost)
+  if (envHost) {
     return `http://${String(envHost)
       .replace(/^https?:\/\//, '')
       .replace(/\/$/, '')}:8000`
-
-  const hostUri = Constants.expoConfig?.hostUri as string | undefined
-  if (hostUri) {
-    const host = hostUri.split(':')[0]
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:8000`
-    }
   }
 
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:8000' // Android emulator
-    : 'http://localhost:8000' // iOS simulator
+  // Default: live Cloud Run (works in both dev and production)
+  return LIVE_API_BASE
 }
 
 export const API_BASE_URL = `${getBaseUrl()}/api/v1`

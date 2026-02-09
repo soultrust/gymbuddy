@@ -83,18 +83,28 @@ def exchange_firebase_token(request: Request) -> Response:
         if identity:
             user = identity.user
         else:
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={"username": email},
-            )
-            if created:
+            # Prefer existing user by email so web and mobile always share the same
+            # account (and data). Only create a new user if this email has never been seen.
+            user = User.objects.filter(email=email).first()
+            if user:
+                UserIdentity.objects.get_or_create(
+                    user=user,
+                    provider=UserIdentity.Provider.FIREBASE,
+                    provider_uid=uid,
+                )
+            else:
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=os.urandom(32).hex(),
+                )
                 user.set_unusable_password()
                 user.save()
-            UserIdentity.objects.get_or_create(
-                user=user,
-                provider=UserIdentity.Provider.FIREBASE,
-                provider_uid=uid,
-            )
+                UserIdentity.objects.create(
+                    user=user,
+                    provider=UserIdentity.Provider.FIREBASE,
+                    provider_uid=uid,
+                )
         token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
     except FileNotFoundError as e:

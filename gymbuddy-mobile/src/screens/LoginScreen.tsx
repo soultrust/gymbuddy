@@ -14,22 +14,24 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginScreen() {
-  const { login } = useAuth()
-  const [username, setUsername] = useState('')
+  const { login, signUp } = useAuth()
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(false)
 
-  const handleLogin = async () => {
-    if (!username.trim() || !password) {
-      Alert.alert('Error', 'Enter username and password')
+  const handleSubmit = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert('Error', 'Enter email and password')
       return
     }
     setLoading(true)
     try {
-      await login(username.trim(), password)
+      if (isSignUp) await signUp(email.trim(), password)
+      else await login(email.trim(), password)
     } catch (e) {
       Alert.alert(
-        'Login failed',
+        isSignUp ? 'Sign up failed' : 'Login failed',
         e instanceof Error ? e.message : 'Unknown error'
       )
     } finally {
@@ -44,13 +46,14 @@ export default function LoginScreen() {
     >
       <Text style={styles.title}>GymBuddy</Text>
       <Text style={styles.subtitle}>Sign in to track your workouts</Text>
-      <Text style={styles.label}>Username</Text>
+      <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
-        placeholder="Username"
+        placeholder="Email (same as web)"
+        keyboardType="email-address"
         placeholderTextColor="#a8a29e"
-        value={username}
-        onChangeText={setUsername}
+        value={email}
+        onChangeText={setEmail}
         autoCapitalize="none"
         autoCorrect={false}
       />
@@ -65,14 +68,27 @@ export default function LoginScreen() {
       />
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
+        onPress={handleSubmit}
         disabled={loading}
       >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Log in</Text>
+          <Text style={styles.buttonText}>
+            {isSignUp ? 'Sign up' : 'Log in'}
+          </Text>
         )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.switchAuth}
+        onPress={() => setIsSignUp((v) => !v)}
+        disabled={loading}
+      >
+        <Text style={styles.switchAuthText}>
+          {isSignUp
+            ? 'Already have an account? Log in'
+            : "Don't have an account? Sign up"}
+        </Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   )
@@ -125,6 +141,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  switchAuth: {
+    marginTop: 20,
+    paddingVertical: 12,
+  },
+  switchAuthText: {
+    color: '#78716c',
+    fontSize: 14,
     textAlign: 'center',
   },
 })

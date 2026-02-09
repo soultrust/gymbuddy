@@ -55,7 +55,7 @@ type Workout = {
 }
 
 export default function WorkoutsScreen({ navigation }: NavProps) {
-  const { token, logout } = useAuth()
+  const { token, userEmail, logout } = useAuth()
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -76,10 +76,19 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         { token }
       )
       setWorkouts(Array.isArray(data) ? data : data.results ?? [])
-    } catch {
+    } catch (err) {
       setWorkouts([])
+      // 401 = wrong or expired token; clear so user can log in again (same account as web)
+      if (
+        err &&
+        typeof err === 'object' &&
+        'status' in err &&
+        (err as { status?: number }).status === 401
+      ) {
+        await logout()
+      }
     }
-  }, [token])
+  }, [token, logout])
 
   const fetchTemplate = useCallback(async () => {
     if (!token) return
@@ -239,7 +248,14 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>GymBuddy</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.title}>GymBuddy</Text>
+          {userEmail ? (
+            <Text style={styles.userEmail} numberOfLines={1}>
+              {userEmail}
+            </Text>
+          ) : null}
+        </View>
         <TouchableOpacity onPress={handleLogout}>
           <Text style={styles.logout}>Log out</Text>
         </TouchableOpacity>
@@ -330,6 +346,10 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
       {workouts.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.empty}>No workouts yet</Text>
+          <Text style={styles.emptyHint}>
+            Use the same email on web and here to see the same data. If you
+            added workouts on the web, log out and log in again with that email.
+          </Text>
           <TouchableOpacity
             style={styles.emptyNewWorkout}
             onPress={() => setShowCreateForm(true)}
@@ -457,6 +477,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e7e5e4',
   },
+  headerLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -478,7 +502,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#78716c',
     fontSize: 16,
+    marginBottom: 12,
+  },
+  emptyHint: {
+    textAlign: 'center',
+    color: '#a8a29e',
+    fontSize: 14,
     marginBottom: 24,
+    paddingHorizontal: 24,
   },
   emptyNewWorkout: {
     flexDirection: 'row',
@@ -710,7 +741,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#000',
   },
   chipRepsText: {
