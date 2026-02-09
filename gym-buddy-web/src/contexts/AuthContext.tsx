@@ -15,6 +15,8 @@ type AuthContextType = {
   token: string | null;
   firebaseUser: FirebaseUser | null;
   isLoading: boolean;
+  authError: string | null;
+  clearAuthError: () => void;
   login: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -35,19 +37,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
+      setAuthError(null);
       if (user) {
         try {
           const idToken = await user.getIdToken();
           const djangoToken = await exchangeFirebaseToken(idToken);
           localStorage.setItem(TOKEN_KEY, djangoToken);
           setToken(djangoToken);
-        } catch {
+        } catch (err) {
           setToken(null);
           localStorage.removeItem(TOKEN_KEY);
+          setAuthError(
+            err instanceof Error ? err.message : "Could not connect to server. Is the API running?"
+          );
         }
       } else {
         setToken(null);
@@ -73,7 +80,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, firebaseUser, isLoading, login, signUp, logout }}>
+    <AuthContext.Provider
+      value={{
+        token,
+        firebaseUser,
+        isLoading,
+        authError,
+        clearAuthError: () => setAuthError(null),
+        login,
+        signUp,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
