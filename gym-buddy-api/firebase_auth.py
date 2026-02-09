@@ -38,11 +38,18 @@ def _init_firebase():
         "GOOGLE_APPLICATION_CREDENTIALS",
         str(Path(__file__).resolve().parent / "firebase-service-account.json"),
     )
+    logger.info(f"Looking for Firebase credentials at: {cred_path}")
+    logger.info(
+        f"GOOGLE_APPLICATION_CREDENTIALS env var: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', 'NOT SET')}"
+    )
     if not os.path.exists(cred_path):
-        raise FileNotFoundError(
+        error_msg = (
             f"Firebase service account not found at {cred_path}. "
             "Download it from Firebase Console > Project Settings > Service Accounts."
         )
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
+    logger.info(f"Found Firebase credentials at: {cred_path}")
     cred = credentials.Certificate(cred_path)
     firebase_admin.initialize_app(cred)
 
@@ -90,6 +97,12 @@ def exchange_firebase_token(request: Request) -> Response:
             )
         token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": token.key})
+    except FileNotFoundError as e:
+        logger.exception("Firebase credentials not found")
+        return Response(
+            {"detail": f"Server configuration error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
     except Exception as e:
         logger.exception("Firebase token exchange failed")
         return Response(

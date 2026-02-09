@@ -1,0 +1,9 @@
+BUILD script that worked:
+gcloud builds submit --tag gcr.io/soultrust-gymbuddy/gymbuddy-api
+   
+DEPLOY script that worked:
+gcloud run deploy gymbuddy-api --image gcr.io/soultrust-gymbuddy/gymbuddy-api --region us-central1 --allow-unauthenticated --timeout 300 --cpu-boost --set-secrets="/secrets/firebase-service-account.json=firebase-service-account:latest" --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-service-account.json"
+
+
+The secret mount was the problem: Cloud Run was mounting the secret at /app/firebase-service-account.json, which replaced the whole /app directory and hid your app files. Moving the mount to /secrets/ fixed it.
+Your API should now be live on Cloud Run.

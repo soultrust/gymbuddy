@@ -41,9 +41,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",  # Vite default
     "http://127.0.0.1:5173",
+    "https://soultrust-gymbuddy.web.app",
+    "https://soultrust-gymbuddy.firebaseapp.com",
 ]
 
-
+CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
