@@ -7,3 +7,33 @@ gcloud run deploy gymbuddy-api --image gcr.io/soultrust-gymbuddy/gymbuddy-api --
 
 The secret mount was the problem: Cloud Run was mounting the secret at /app/firebase-service-account.json, which replaced the whole /app directory and hid your app files. Moving the mount to /secrets/ fixed it.
 Your API should now be live on Cloud Run.
+
+---
+WHY DATA KEEPS DISAPPEARING:
+Cloud Run is NOT using DATABASE_URL, so Django uses SQLite (db.sqlite3) inside the container. The container filesystem is ephemeral: every deploy, scale-to-zero, or restart wipes it, so all data is lost.
+
+FIX: Use a persistent database (Cloud SQL PostgreSQL) and set DATABASE_URL on deploy. See docs/CLOUD_SQL_SETUP.md. In short:
+1. Create Cloud SQL instance + database (gcloud sql instances create ... ; gcloud sql databases create gymbuddy ...).
+2. Run migrations against it locally first: DATABASE_URL="postgresql://postgres:PASSWORD@PUBLIC_IP:5432/gymbuddy" python manage.py migrate
+3. Deploy with Cloud SQL attached and DATABASE_URL set, e.g.:
+   gcloud run deploy gymbuddy-api --image gcr.io/soultrust-gymbuddy/gymbuddy-api --region us-central1 --allow-unauthenticated --timeout 300 --cpu-boost \
+     --add-cloudsql-instances=YOUR_PROJECT_ID:us-central1:gymbuddy-db \
+     --set-secrets="/secrets/firebase-service-account.json=firebase-service-account:latest" \
+     --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-service-account.json" \
+     --set-env-vars "DATABASE_URL=postgresql://postgres:YOUR_DB_PASSWORD@/gymbuddy?host=/cloudsql/YOUR_PROJECT_ID:us-central1:gymbuddy-db"
+   (Or store the full DATABASE_URL in Secret Manager and use --set-secrets for it; never commit the password.)
+After this, data persists across deploys and restarts.
+
+from repo root:
+gcloud builds submit --tag gcr.io/soultrust-gymbuddy/gymbuddy-api gymbuddy-api
+
+
+gcloud run deploy gymbuddy-api \
+  --image gcr.io/soultrust-gymbuddy/gymbuddy-api \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --timeout 300 \
+  --cpu-boost \
+  --add-cloudsql-instances=soultrust-gymbuddy:us-central1:gymbuddy-db \
+  --set-secrets="/secrets/firebase-service-account.json=firebase-service-account:latest" \
+  --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-service-account.json,DATABASE_URL=postgresql://postgres:YOUR_DB_PASSWORD@/gymbuddy?host=/cloudsql/soultrust-gymbuddy:us-central1:gymbuddy-db"
