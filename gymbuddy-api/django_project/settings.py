@@ -34,6 +34,12 @@ ALLOWED_HOSTS = [
     "10.0.2.2",  # Android emulator (host machine)
     "*",  # Allow any host in dev (physical device uses your LAN IP)
 ]
+
+# Required for Django 4.0+ when serving over HTTPS (e.g. Cloud Run).
+# Admin login and other POSTs will otherwise get "CSRF verification failed".
+CSRF_TRUSTED_ORIGINS = [
+    "https://gymbuddy-api-1038994855355.us-central1.run.app",
+]
 # For physical device: run "python manage.py runserver 0.0.0.0:8000"
 
 CORS_ALLOWED_ORIGINS = [
@@ -68,6 +74,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -145,8 +152,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
+# WhiteNoise serves these in production so admin (and any other static assets) look correct.
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

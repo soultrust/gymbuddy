@@ -31,10 +31,17 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
 class WorkoutSessionSerializer(serializers.ModelSerializer):
     exercises = PerformedExerciseSerializer(many=True, read_only=True)
     date = serializers.DateTimeField(required=False)
+    date_display = serializers.SerializerMethodField()
 
     class Meta:
         model = WorkoutSession
-        fields = ["id", "date", "name", "notes", "exercises"]
+        fields = ["id", "date", "date_display", "name", "notes", "exercises"]
+
+    def get_date_display(self, obj):
+        if not obj or not obj.date:
+            return ""
+        d = obj.date
+        return f"{d.month:02d}/{d.day:02d}"
 
 
 class TemplateExerciseSerializer(serializers.ModelSerializer):

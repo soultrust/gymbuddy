@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 from . import views
 
@@ -11,4 +12,6 @@ router.register(
 )
 router.register(r"set-entries", views.SetEntryViewSet, basename="set-entry")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("debug-db/", views.debug_db),
+] + router.urls

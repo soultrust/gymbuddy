@@ -16,6 +16,7 @@ import { apiRequest } from '../api/client'
 type Workout = {
   id: number
   date: string
+  date_display?: string
   name: string
   notes: string
   exercises: PerformedExercise[]
@@ -241,7 +242,7 @@ export default function WorkoutDetailScreen({
           <Text style={styles.backBtn}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
-          {formatMonthDay(workout.date)}
+          {workout.date_display ?? formatMonthDay(workout.date)}
         </Text>
       </View>
 

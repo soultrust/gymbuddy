@@ -21,6 +21,8 @@ COPY . .
 
 RUN chmod +x /app/entrypoint.sh /app/start_server.py
 
+RUN python manage.py collectstatic --noinput --clear 2>&1 || true
+
 EXPOSE 8080
 
 CMD ["sh", "-c", "cd /app && python manage.py migrate --noinput 2>&1 || true && exec gunicorn django_project.wsgi:application -c gunicorn.conf.py --bind 0.0.0.0:${PORT:-8080}"]

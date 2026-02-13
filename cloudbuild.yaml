@@ -1,8 +1,8 @@
 # Build from monorepo root:
 #   gcloud builds submit --config=cloudbuild.yaml .
 #
-# Or from gymbuddy-api:
-#   cd gymbuddy-api && gcloud builds submit --tag gcr.io/soultrust-gymbuddy/gymbuddy-api
+# Or from gymbuddy-api (use . as source, not gymbuddy-api):
+#   cd gymbuddy-api && gcloud builds submit --tag gcr.io/soultrust-gymbuddy/gymbuddy-api .
 
 steps:
   - name: "gcr.io/cloud-builders/docker"

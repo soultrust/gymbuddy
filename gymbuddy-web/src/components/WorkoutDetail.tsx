@@ -297,13 +297,13 @@ export default function WorkoutDetail({
     }
   };
 
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+  /** MM/DD (e.g. 03/17) - matches mobile */
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${mm}/${dd}`;
+  };
 
   if (loading || !workout) {
     return (

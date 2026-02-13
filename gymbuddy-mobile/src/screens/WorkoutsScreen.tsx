@@ -49,6 +49,7 @@ type PerformedExercise = {
 type Workout = {
   id: number
   date: string
+  date_display?: string
   name: string
   notes: string
   exercises: PerformedExercise[]
@@ -470,7 +471,7 @@ onPress={() => {
                 >
                   <View style={styles.tdTitle}>
                     <Text style={styles.rowTitle} numberOfLines={1}>
-                      {formatMonthDay(item.date)}
+                      {item.date_display ?? formatMonthDay(item.date)}
                     </Text>
                   </View>
                   <View style={styles.tdExercise}>

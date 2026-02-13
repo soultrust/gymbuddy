@@ -1,5 +1,9 @@
 # workouts/views.py
 # pyright: reportUnreachable=false
+import os
+
+from django.conf import settings
+from django.http import JsonResponse
 from rest_framework import viewsets, status
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import action
@@ -17,6 +21,15 @@ from .serializers import (
     ExerciseSerializer,
     TemplateExerciseSerializer,
 )
+
+
+def debug_db(request):
+    """Temporary: report which DB the running process is using. Remove after testing."""
+    db = settings.DATABASES["default"]
+    return JsonResponse({
+        "engine": db["ENGINE"],
+        "has_database_url": bool(os.environ.get("DATABASE_URL")),
+    })
 
 
 class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):

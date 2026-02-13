@@ -1,0 +1,10 @@
+# Run from gymbuddy-api directory:
+#   gcloud builds submit --config=cloudbuild.yaml .
+#
+# Builds the image from the current directory (Dockerfile must be here).
+
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/soultrust-gymbuddy/gymbuddy-api", "."]
+images:
+  - "gcr.io/soultrust-gymbuddy/gymbuddy-api"
