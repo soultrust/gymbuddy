@@ -41,7 +41,7 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
         if not obj or not obj.date:
             return ""
         d = obj.date
-        return f"{d.month:02d}/{d.day:02d}"
+        return f"{d.month}/{d.day:02d}"
 
 
 class TemplateExerciseSerializer(serializers.ModelSerializer):

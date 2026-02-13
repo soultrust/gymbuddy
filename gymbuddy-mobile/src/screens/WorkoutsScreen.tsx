@@ -165,10 +165,10 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     await logout()
   }
 
-  /** Format as MM/DD (e.g. 03/17) for workout list - no year */
+  /** Format as M/DD (e.g. 3/17) for workout list - no year, no leading zero on month */
   const formatMonthDay = (d: string) => {
     const date = new Date(d)
-    const mm = String(date.getMonth() + 1).padStart(2, '0')
+    const mm = String(date.getMonth() + 1)
     const dd = String(date.getDate()).padStart(2, '0')
     return `${mm}/${dd}`
   }
@@ -470,7 +470,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 >
                   <View style={styles.tdTitle}>
                     <Text style={styles.rowTitle} numberOfLines={1}>
-                      {item.date_display ?? formatMonthDay(item.date)}
+                      {formatMonthDay(item.date)}
                     </Text>
                   </View>
                   <View style={styles.tdExercise}>
@@ -676,17 +676,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   thAddButton: {
-    width: 140,
+    width: 80,
     paddingHorizontal: 16,
   },
   thExercise: {
     flex: 1,
     minWidth: 140,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    justifyContent: 'flex-start',
   },
   exerciseNameColumn: {
     flex: 1,
@@ -738,10 +739,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f5f5f4',
   },
   tdTitle: {
-    width: 140,
+    width: 75,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+    paddingRight: 16,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    textAlign: 'right',
   },
   tdExercise: {
     flex: 1,
@@ -763,7 +766,9 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    gap: 6,
+    gap: 9,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
