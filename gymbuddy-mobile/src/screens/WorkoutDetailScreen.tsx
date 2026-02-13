@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
@@ -67,6 +69,8 @@ export default function WorkoutDetailScreen({
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
   const [editingSetReps, setEditingSetReps] = useState('')
   const [editingSetWeight, setEditingSetWeight] = useState('')
+  const [editingDate, setEditingDate] = useState(false)
+  const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
 
   const fetchWorkout = useCallback(async () => {
     if (!token) return
@@ -178,6 +182,25 @@ export default function WorkoutDetailScreen({
     await saveSetToApi(set, reps, editingSetWeight, true)
   }
 
+  const handleSaveDate = async (dateToSave?: Date) => {
+    if (!token || !workout) return
+    const date = dateToSave || editingDateValue
+    if (!date) return
+    try {
+      const dateISO = date.toISOString()
+      await apiRequest(`/workouts/${workoutId}/`, {
+        method: 'PATCH',
+        token,
+        body: { date: dateISO },
+      })
+      setEditingDate(false)
+      setEditingDateValue(null)
+      await fetchWorkout()
+    } catch {
+      // ignore
+    }
+  }
+
   const handleDeleteSet = async (set: SetEntry) => {
     if (!token) return
     try {
@@ -236,14 +259,62 @@ export default function WorkoutDetailScreen({
   }
 
   return (
-    <View style={styles.container}>
+      <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>
-          {workout.date_display ?? formatMonthDay(workout.date)}
-        </Text>
+        {editingDate ? (
+          <View style={styles.dateEditContainer}>
+            <DateTimePicker
+              value={editingDateValue || new Date(workout.date)}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(_event: unknown, selectedDate?: Date) => {
+                if (Platform.OS === 'android') {
+                  setEditingDate(false)
+                }
+                if (selectedDate) {
+                  setEditingDateValue(selectedDate)
+                  if (Platform.OS === 'android') {
+                    handleSaveDate(selectedDate)
+                  }
+                }
+              }}
+            />
+            {Platform.OS === 'ios' && (
+              <View style={styles.dateEditActions}>
+                <TouchableOpacity
+                  style={styles.dateEditBtn}
+                  onPress={() => {
+                    setEditingDate(false)
+                    setEditingDateValue(null)
+                  }}
+                >
+                  <Text style={styles.dateEditBtnText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.dateEditBtn}
+                  onPress={() => handleSaveDate()}
+                >
+                  <Text style={styles.dateEditBtnText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={() => {
+              setEditingDate(true)
+              setEditingDateValue(new Date(workout.date))
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.title} numberOfLines={1}>
+              {workout.date_display ?? formatMonthDay(workout.date)}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -471,6 +542,26 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#1c1917',
+  },
+  dateEditContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dateEditActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 16,
+  },
+  dateEditBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#e7e5e4',
+  },
+  dateEditBtnText: {
+    fontSize: 16,
+    fontWeight: '500',
     color: '#1c1917',
   },
   content: { flex: 1 },
