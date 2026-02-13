@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
-
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
@@ -265,11 +264,11 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         transparent
         animationType="fade"
         onRequestClose={() => {
-        if (!createSubmitting) {
-          setShowCreateForm(false)
-          setShowDatePicker(false)
-        }
-      }}
+          if (!createSubmitting) {
+            setShowCreateForm(false)
+            setShowDatePicker(false)
+          }
+        }}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -348,13 +347,13 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelBtn}
-onPress={() => {
-                if (!createSubmitting) {
-                  setShowCreateForm(false)
-                  setShowDatePicker(false)
-                }
-              }}
-              disabled={createSubmitting}
+                onPress={() => {
+                  if (!createSubmitting) {
+                    setShowCreateForm(false)
+                    setShowDatePicker(false)
+                  }
+                }}
+                disabled={createSubmitting}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
@@ -385,12 +384,11 @@ onPress={() => {
             added workouts on the web, log out and log in again with that email.
           </Text>
           <TouchableOpacity
-            style={styles.emptyNewWorkout}
+            style={styles.addButton}
             onPress={() => setShowCreateForm(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={20} color="#d97706" />
-            <Text style={styles.emptyNewWorkoutText}>New Workout</Text>
+            <Ionicons name="add" size={24} color="#d97706" />
           </TouchableOpacity>
         </View>
       ) : (
@@ -403,14 +401,15 @@ onPress={() => {
         >
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <TouchableOpacity
-                style={styles.thTitle}
-                onPress={() => setShowCreateForm(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={18} color="#1c1917" />
-                <Text style={styles.newWorkoutTableText}>New Workout</Text>
-              </TouchableOpacity>
+              <View style={styles.thAddButton}>
+                <TouchableOpacity
+                  style={[styles.addButton]}
+                  onPress={() => setShowCreateForm(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={34} color="#1c1917" />
+                </TouchableOpacity>
+              </View>
               <View style={styles.thExercise}>
                 <TouchableOpacity
                   onPress={() => setExerciseIndex((i) => Math.max(0, i - 1))}
@@ -550,15 +549,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 24,
   },
-  emptyNewWorkout: {
-    flexDirection: 'row',
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: 'center',
-    gap: 8,
-  },
-  emptyNewWorkoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#d97706',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    backgroundColor: '#fdba74',
   },
   modalOverlay: {
     flex: 1,
@@ -674,19 +673,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e7e5e4',
     backgroundColor: '#fafaf9',
-  },
-  thTitle: {
-    width: 140,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
   },
-  newWorkoutTableText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1c1917',
+  thAddButton: {
+    width: 140,
+    paddingHorizontal: 16,
   },
   thExercise: {
     flex: 1,
