@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import {
   ActivityIndicator,
   Modal,
@@ -59,6 +60,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [template, setTemplate] = useState<TemplateExercise[]>([])
@@ -103,8 +105,21 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   }, [token])
 
   useEffect(() => {
-    fetchWorkouts().finally(() => setLoading(false))
+    fetchWorkouts().finally(() => {
+      setLoading(false)
+      setHasLoadedOnce(true)
+    })
   }, [fetchWorkouts])
+
+  // Refresh data when screen comes into focus (e.g., when navigating back)
+  useFocusEffect(
+    useCallback(() => {
+      // Only refresh if we've already loaded once (skip initial mount)
+      if (hasLoadedOnce) {
+        fetchWorkouts()
+      }
+    }, [fetchWorkouts, hasLoadedOnce]),
+  )
 
   useEffect(() => {
     if (showCreateForm) {
