@@ -30,6 +30,7 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
 
 class WorkoutSessionSerializer(serializers.ModelSerializer):
     exercises = PerformedExerciseSerializer(many=True, read_only=True)
+    date = serializers.DateTimeField(required=False)
 
     class Meta:
         model = WorkoutSession

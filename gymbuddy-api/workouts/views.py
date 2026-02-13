@@ -35,12 +35,15 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        kwargs = {"user": self.request.user}
+        if "date" in serializer.validated_data:
+            kwargs["date"] = serializer.validated_data["date"]
+        serializer.save(**kwargs)
 
     @action(detail=False, methods=["get"])
     def template(self, request):
         """GET /api/v1/workouts/template/ - last workout's exercises with sets (for next workout)."""
-        last = self.get_queryset().order_by("-date", "-created_at").first()
+        last = self.get_queryset().order_by("-date").first()
         if not last:
             return Response([])
         exercises = last.exercises.all()
@@ -54,7 +57,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         previous = (
             self.get_queryset()
             .filter(date__lt=workout.date)
-            .order_by("-date", "-created_at")
+            .order_by("-date")
             .first()
         )
         if not previous:

@@ -218,12 +218,12 @@ export default function WorkoutDetailScreen({
     }
   }
 
-  const formatDateShort = (d: string) => {
+  /** Format as MM/DD (e.g. 03/17) - no year */
+  const formatMonthDay = (d: string) => {
     const date = new Date(d)
     const mm = String(date.getMonth() + 1).padStart(2, '0')
     const dd = String(date.getDate()).padStart(2, '0')
-    const yy = String(date.getFullYear()).slice(-2)
-    return `${mm}-${dd}-${yy}`
+    return `${mm}/${dd}`
   }
 
   if (loading || !workout) {
@@ -241,7 +241,7 @@ export default function WorkoutDetailScreen({
           <Text style={styles.backBtn}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
-          {workout.name || formatDateShort(workout.date)}
+          {formatMonthDay(workout.date)}
         </Text>
       </View>
 

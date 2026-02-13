@@ -22,7 +22,7 @@ class PerformedExerciseInline(admin.TabularInline):
 
 @admin.register(WorkoutSession)
 class WorkoutSessionAdmin(admin.ModelAdmin):
-    list_display = ["user", "date", "name", "created_at"]
+    list_display = ["user", "date", "name"]
     list_filter = ["date"]
     search_fields = ["user__username", "name"]
     inlines = [PerformedExerciseInline]

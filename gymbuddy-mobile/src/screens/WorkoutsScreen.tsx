@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -10,13 +11,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
-
-const todayISO = () => new Date().toISOString().slice(0, 10)
 
 type TemplateExercise = {
   exercise: { id: number; name: string }
@@ -62,8 +62,8 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [template, setTemplate] = useState<TemplateExercise[]>([])
-  const [createDate, setCreateDate] = useState(todayISO)
-  const [createName, setCreateName] = useState('')
+  const [createDate, setCreateDate] = useState(() => new Date())
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
@@ -73,9 +73,9 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     try {
       const data = await apiRequest<Workout[] | { results: Workout[] }>(
         '/workouts/',
-        { token }
+        { token },
       )
-      setWorkouts(Array.isArray(data) ? data : data.results ?? [])
+      setWorkouts(Array.isArray(data) ? data : (data.results ?? []))
     } catch (err) {
       setWorkouts([])
       // 401 = wrong or expired token; clear so user can log in again (same account as web)
@@ -109,9 +109,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   useEffect(() => {
     if (showCreateForm) {
       fetchTemplate()
-      const today = todayISO()
-      setCreateDate(today)
-      setCreateName(formatDateShort(today))
+      setCreateDate(new Date())
     }
   }, [showCreateForm, fetchTemplate])
 
@@ -120,12 +118,13 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     setCreateError(null)
     setCreateSubmitting(true)
     try {
+      const dateISO = createDate.toISOString().slice(0, 10)
       const workout = await apiRequest<Workout>('/workouts/', {
         method: 'POST',
         token,
         body: {
-          date: createDate,
-          name: createName.trim() || formatDateShort(createDate),
+          date: `${dateISO}T12:00:00.000Z`,
+          name: '',
           notes: createNotes.trim() || '',
         },
       })
@@ -141,8 +140,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         })
       }
       setShowCreateForm(false)
-      setCreateDate(todayISO())
-      setCreateName('')
+      setCreateDate(new Date())
       setCreateNotes('')
       await fetchWorkouts()
       if (workout.id) {
@@ -150,7 +148,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
       }
     } catch (err) {
       setCreateError(
-        err instanceof Error ? err.message : 'Failed to create workout'
+        err instanceof Error ? err.message : 'Failed to create workout',
       )
     } finally {
       setCreateSubmitting(false)
@@ -167,12 +165,12 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     await logout()
   }
 
-  const formatDateShort = (d: string) => {
+  /** Format as MM/DD (e.g. 03/17) for workout list - no year */
+  const formatMonthDay = (d: string) => {
     const date = new Date(d)
     const mm = String(date.getMonth() + 1).padStart(2, '0')
     const dd = String(date.getDate()).padStart(2, '0')
-    const yy = String(date.getFullYear()).slice(-2)
-    return `${mm}-${dd}-${yy}`
+    return `${mm}/${dd}`
   }
 
   // Build ordered list of exercises (by first appearance across workouts)
@@ -194,7 +192,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
 
   const safeIndex = Math.min(
     exerciseIndex,
-    Math.max(0, exerciseColumns.length - 1)
+    Math.max(0, exerciseColumns.length - 1),
   )
   const selectedExercise = exerciseColumns[safeIndex] ?? null
   const canGoPrev = safeIndex > 0
@@ -265,12 +263,22 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         visible={showCreateForm}
         transparent
         animationType="fade"
-        onRequestClose={() => !createSubmitting && setShowCreateForm(false)}
+        onRequestClose={() => {
+        if (!createSubmitting) {
+          setShowCreateForm(false)
+          setShowDatePicker(false)
+        }
+      }}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => !createSubmitting && setShowCreateForm(false)}
+          onPress={() => {
+            if (!createSubmitting) {
+              setShowCreateForm(false)
+              setShowDatePicker(false)
+            }
+          }}
         >
           <TouchableOpacity
             activeOpacity={1}
@@ -285,23 +293,43 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
               </Text>
             )}
             <Text style={styles.inputLabel}>Date</Text>
-            <TextInput
+            <TouchableOpacity
               style={styles.modalInput}
-              value={createDate}
-              onChangeText={setCreateDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#a8a29e"
-              editable={!createSubmitting}
-            />
-            <Text style={styles.inputLabel}>Name (optional)</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={createName}
-              onChangeText={setCreateName}
-              placeholder="e.g. Push Day"
-              placeholderTextColor="#a8a29e"
-              editable={!createSubmitting}
-            />
+              onPress={() => !createSubmitting && setShowDatePicker(true)}
+              disabled={createSubmitting}
+            >
+              <Text style={styles.dateButtonText}>
+                {createDate.toLocaleDateString(undefined, {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <View style={styles.datePickerContainer}>
+                <DateTimePicker
+                  value={createDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_event: unknown, selectedDate?: Date) => {
+                    if (Platform.OS === 'android') {
+                      setShowDatePicker(false)
+                    }
+                    if (selectedDate) setCreateDate(selectedDate)
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    style={styles.datePickerDoneBtn}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
             <Text style={styles.inputLabel}>Notes (optional)</Text>
             <TextInput
               style={[styles.modalInput, styles.modalTextArea]}
@@ -319,8 +347,13 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelBtn}
-                onPress={() => !createSubmitting && setShowCreateForm(false)}
-                disabled={createSubmitting}
+onPress={() => {
+                if (!createSubmitting) {
+                  setShowCreateForm(false)
+                  setShowDatePicker(false)
+                }
+              }}
+              disabled={createSubmitting}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
@@ -405,7 +438,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 <TouchableOpacity
                   onPress={() =>
                     setExerciseIndex((i) =>
-                      Math.min(Math.max(0, exerciseColumns.length - 1), i + 1)
+                      Math.min(Math.max(0, exerciseColumns.length - 1), i + 1),
                     )
                   }
                   disabled={!canGoNext}
@@ -437,7 +470,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 >
                   <View style={styles.tdTitle}>
                     <Text style={styles.rowTitle} numberOfLines={1}>
-                      {item.name || formatDateShort(item.date)}
+                      {formatMonthDay(item.date)}
                     </Text>
                   </View>
                   <View style={styles.tdExercise}>
@@ -485,6 +518,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1c1917',
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#78716c',
+    marginTop: 2,
   },
   logout: {
     color: '#d97706',
@@ -560,6 +598,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 16,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: '#1c1917',
+  },
+  datePickerContainer: {
+    marginBottom: 16,
+  },
+  datePickerDoneBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  datePickerDoneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#d97706',
   },
   modalTextArea: {
     minHeight: 80,

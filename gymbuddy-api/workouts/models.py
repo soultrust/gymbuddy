@@ -21,13 +21,12 @@ class WorkoutSession(models.Model):
         on_delete=models.CASCADE,
         related_name="workout_sessions",
     )
-    date = models.DateField()
+    date = models.DateTimeField(auto_now_add=True)  # when the workout was logged
     name = models.CharField(max_length=100, blank=True)  # “Push day”, etc.
     notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-date", "-created_at"]
+        ordering = ["-date"]
 
 
 class PerformedExercise(models.Model):
