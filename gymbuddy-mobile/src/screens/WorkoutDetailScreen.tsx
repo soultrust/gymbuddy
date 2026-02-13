@@ -297,7 +297,7 @@ export default function WorkoutDetailScreen({
   }
 
   return (
-      <View style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>← Back</Text>
@@ -381,9 +381,6 @@ export default function WorkoutDetailScreen({
                   <Text style={styles.exerciseName}>
                     {pe.user_preferred_name || pe.exercise.name}
                   </Text>
-                  {lastText && (
-                    <Text style={styles.lastText}>Last: {lastText}</Text>
-                  )}
                 </View>
                 {pe.sets.map((s) =>
                   editingSetId === s.id ? (
