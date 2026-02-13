@@ -215,6 +215,19 @@ export default function WorkoutDetailScreen({
     }
   }
 
+  const handleDeleteWorkout = async () => {
+    if (!token || !workout) return
+    try {
+      await apiRequest(`/workouts/${workoutId}/`, {
+        method: 'DELETE',
+        token,
+      })
+      navigation.goBack()
+    } catch {
+      // ignore
+    }
+  }
+
   const handleAddExercise = async () => {
     if (!token || !newExerciseName.trim()) return
     setAddingExercise(true)
@@ -284,7 +297,7 @@ export default function WorkoutDetailScreen({
   }
 
   return (
-    <View style={styles.container}>
+      <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>← Back</Text>
@@ -334,10 +347,20 @@ export default function WorkoutDetailScreen({
               setEditingDateValue(new Date(workout.date))
             }}
             activeOpacity={0.7}
+            style={styles.titleContainer}
           >
             <Text style={styles.title} numberOfLines={1}>
               {formatFullDate(workout.date)}
             </Text>
+          </TouchableOpacity>
+        )}
+        {!editingDate && (
+          <TouchableOpacity
+            onPress={handleDeleteWorkout}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.deleteBtn}
+          >
+            <Ionicons name="trash-outline" size={22} color="#78716c" />
           </TouchableOpacity>
         )}
       </View>
@@ -563,11 +586,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginRight: 16,
   },
-  title: {
+  titleContainer: {
     flex: 1,
+  },
+  title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1c1917',
+  },
+  deleteBtn: {
+    marginLeft: 16,
+    padding: 4,
   },
   dateEditContainer: {
     flex: 1,
