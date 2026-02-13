@@ -384,7 +384,7 @@ export default function WorkoutDetailScreen({
                 </View>
                 {pe.sets.map((s) =>
                   editingSetId === s.id ? (
-                    <View key={s.id} style={styles.setRow}>
+                    <View key={s.id} style={[styles.setRow, styles.setRowEditing]}>
                       <View style={styles.setLabelRow}>
                         <Text style={styles.setLabel}>Set {s.order}</Text>
                         <TouchableOpacity
@@ -561,7 +561,7 @@ export default function WorkoutDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafaf9' },
+  container: { flex: 1, backgroundColor: '#c9a882' },
   centered: {
     flex: 1,
     justifyContent: 'center',
@@ -624,17 +624,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   exerciseCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fff4e6',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e7e5e4',
     padding: 16,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
   exerciseHeader: {
     flexDirection: 'row',
@@ -655,6 +655,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  setRowEditing: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
+    padding: 8,
     marginBottom: 8,
   },
   setLabelRow: {
@@ -711,6 +717,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     fontSize: 18,
+    backgroundColor: '#fff4e6',
   },
   setEditRight: {
     flexDirection: 'row',
@@ -762,6 +769,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    backgroundColor: '#fff4e6',
   },
   addExerciseBtn: {
     paddingHorizontal: 20,

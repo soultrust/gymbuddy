@@ -32,7 +32,7 @@ export default function LoginScreen() {
     } catch (e) {
       Alert.alert(
         isSignUp ? 'Sign up failed' : 'Login failed',
-        e instanceof Error ? e.message : 'Unknown error'
+        e instanceof Error ? e.message : 'Unknown error',
       )
     } finally {
       setLoading(false)
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#c9a882',
   },
   title: {
     fontSize: 30,
