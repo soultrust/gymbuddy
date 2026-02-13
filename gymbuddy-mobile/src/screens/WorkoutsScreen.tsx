@@ -760,8 +760,9 @@ const styles = StyleSheet.create({
     color: '#57534e',
   },
   chipRow: {
+    display: 'flex',
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     gap: 6,
   },
   chip: {

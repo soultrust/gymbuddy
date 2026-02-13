@@ -89,7 +89,7 @@ export default function WorkoutDetailScreen({
     try {
       const data = await apiRequest<TemplateExercise[]>(
         `/workouts/${workoutId}/previous_exercises/`,
-        { token }
+        { token },
       )
       setPreviousExercises(Array.isArray(data) ? data : [])
     } catch {
@@ -99,7 +99,7 @@ export default function WorkoutDetailScreen({
 
   useEffect(() => {
     Promise.all([fetchWorkout(), fetchPrevious()]).finally(() =>
-      setLoading(false)
+      setLoading(false),
     )
   }, [fetchWorkout, fetchPrevious])
 
@@ -124,7 +124,7 @@ export default function WorkoutDetailScreen({
 
   const handleAddSet = async (
     performedExerciseId: number,
-    currentSets: SetEntry[]
+    currentSets: SetEntry[],
   ) => {
     if (!token || !workout) return
     const nextOrder =
@@ -157,7 +157,7 @@ export default function WorkoutDetailScreen({
     set: SetEntry,
     reps: number,
     weight: string,
-    exitEdit = true
+    exitEdit = true,
   ) => {
     if (!token) return
     if (isNaN(reps) || reps < 0) return
@@ -250,6 +250,31 @@ export default function WorkoutDetailScreen({
     return `${mm}/${dd}`
   }
 
+  /** Format as "FRI Feb 13, 2006" */
+  const formatFullDate = (d: string) => {
+    const date = new Date(d)
+    const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ]
+    const weekday = weekdays[date.getDay()]
+    const month = months[date.getMonth()]
+    const day = date.getDate()
+    const year = date.getFullYear()
+    return `${weekday} ${month} ${day}, ${year}`
+  }
+
   if (loading || !workout) {
     return (
       <View style={styles.centered}>
@@ -259,7 +284,7 @@ export default function WorkoutDetailScreen({
   }
 
   return (
-      <View style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>← Back</Text>
@@ -311,7 +336,7 @@ export default function WorkoutDetailScreen({
             activeOpacity={0.7}
           >
             <Text style={styles.title} numberOfLines={1}>
-              {workout.date_display ?? formatMonthDay(workout.date)}
+              {formatFullDate(workout.date)}
             </Text>
           </TouchableOpacity>
         )}
@@ -359,7 +384,7 @@ export default function WorkoutDetailScreen({
                           onPress={() => {
                             const v = Math.max(
                               0,
-                              parseInt(editingSetReps, 10) - 1
+                              parseInt(editingSetReps, 10) - 1,
                             )
                             const next = String(isNaN(v) ? 0 : v)
                             setEditingSetReps(next)
@@ -367,7 +392,7 @@ export default function WorkoutDetailScreen({
                               s,
                               parseInt(next, 10),
                               editingSetWeight,
-                              false
+                              false,
                             )
                           }}
                         >
@@ -425,7 +450,7 @@ export default function WorkoutDetailScreen({
                         </Text>
                       </TouchableOpacity>
                     </View>
-                  )
+                  ),
                 )}
                 {addingSetFor === pe.id ? (
                   <View style={styles.addSetRow}>
