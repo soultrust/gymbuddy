@@ -1,4 +1,4 @@
-BUILD and DEPLOY in one script 
+BUILD and DEPLOY in one script (from root of project)
 ./scripts/deploy-api.sh
 
 BUILD Mobile version
