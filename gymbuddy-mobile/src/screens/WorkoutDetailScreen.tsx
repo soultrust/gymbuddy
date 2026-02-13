@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import {
   ActivityIndicator,
+  Alert,
+  Animated,
   Platform,
   ScrollView,
   StyleSheet,
@@ -71,6 +73,7 @@ export default function WorkoutDetailScreen({
   const [editingSetWeight, setEditingSetWeight] = useState('')
   const [editingDate, setEditingDate] = useState(false)
   const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
+  const fadeAnim = useRef(new Animated.Value(0)).current
 
   const fetchWorkout = useCallback(async () => {
     if (!token) return
@@ -102,6 +105,23 @@ export default function WorkoutDetailScreen({
       setLoading(false),
     )
   }, [fetchWorkout, fetchPrevious])
+
+  useEffect(() => {
+    if (editingSetId !== null) {
+      // Reset to 0 and immediately animate to 1
+      fadeAnim.setValue(0)
+      // Small delay to ensure the component has rendered
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false, // Try without native driver for opacity
+        }).start()
+      }, 50)
+    } else {
+      fadeAnim.setValue(0)
+    }
+  }, [editingSetId, fadeAnim])
 
   const getLastSets = (exerciseId: number) =>
     previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? []
@@ -217,15 +237,32 @@ export default function WorkoutDetailScreen({
 
   const handleDeleteWorkout = async () => {
     if (!token || !workout) return
-    try {
-      await apiRequest(`/workouts/${workoutId}/`, {
-        method: 'DELETE',
-        token,
-      })
-      navigation.goBack()
-    } catch {
-      // ignore
-    }
+    
+    Alert.alert(
+      'Delete Workout',
+      'Are you sure you want to delete this workout? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiRequest(`/workouts/${workoutId}/`, {
+                method: 'DELETE',
+                token,
+              })
+              navigation.goBack()
+            } catch {
+              // ignore
+            }
+          },
+        },
+      ],
+    )
   }
 
   const handleAddExercise = async () => {
@@ -384,7 +421,14 @@ export default function WorkoutDetailScreen({
                 </View>
                 {pe.sets.map((s) =>
                   editingSetId === s.id ? (
-                    <View key={s.id} style={[styles.setRow, styles.setRowEditing]}>
+                    <Animated.View
+                      key={`editing-${s.id}`}
+                      style={[
+                        styles.setRow,
+                        styles.setRowEditing,
+                        { opacity: fadeAnim },
+                      ]}
+                    >
                       <View style={styles.setLabelRow}>
                         <Text style={styles.setLabel}>Set {s.order}</Text>
                         <TouchableOpacity
@@ -445,7 +489,7 @@ export default function WorkoutDetailScreen({
                           keyboardType="numeric"
                         />
                       </View>
-                    </View>
+                    </Animated.View>
                   ) : (
                     <View key={s.id} style={styles.setRow}>
                       <View style={styles.setLabelRow}>
@@ -660,7 +704,9 @@ const styles = StyleSheet.create({
   setRowEditing: {
     backgroundColor: '#f59e0b',
     borderRadius: 8,
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginHorizontal: -11,
     marginBottom: 8,
   },
   setLabelRow: {
