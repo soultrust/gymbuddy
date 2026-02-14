@@ -266,7 +266,7 @@ export default function WorkoutDetailScreen({
 
   const handleDeleteWorkout = async () => {
     if (!token || !workout) return
-    
+
     Alert.alert(
       'Delete Workout',
       'Are you sure you want to delete this workout? This action cannot be undone.',
@@ -699,7 +699,6 @@ const styles = StyleSheet.create({
   exerciseCard: {
     backgroundColor: '#fff4e6',
     borderRadius: 12,
-    borderWidth: 1,
     borderColor: '#e7e5e4',
     padding: 16,
     marginBottom: 24,
@@ -736,6 +735,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+    backgroundColor: '#ffedd2',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   setRowEditing: {
     backgroundColor: '#f59e0b',
