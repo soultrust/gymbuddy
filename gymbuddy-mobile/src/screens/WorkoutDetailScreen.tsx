@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import Svg, { Path } from 'react-native-svg'
 
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
@@ -47,6 +48,34 @@ type TemplateExercise = {
   user_preferred_name?: string
   order: number
   last_sets: SetEntry[]
+}
+
+/** Play-style arrow for stepper: right = increase, left = decrease. */
+function StepperArrowIcon({
+  direction,
+  color,
+  size = 18,
+}: {
+  direction: 'left' | 'right'
+  color: string
+  size?: number
+}) {
+  const path =
+    'M21.415,12.554 L2.418,0.311 C1.291,-0.296 0,-0.233 0,1.946 L0,26.054 C0,28.046 1.385,28.36 2.418,27.689 L21.415,15.446 C22.197,14.647 22.197,13.353 21.415,12.554'
+  const flip = direction === 'left'
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="-1 -1 26 30"
+      style={[
+        { backgroundColor: 'transparent' },
+        flip ? { transform: [{ scaleX: -1 }] } : undefined,
+      ]}
+    >
+      <Path fill={color} d={path} />
+    </Svg>
+  )
 }
 
 export default function WorkoutDetailScreen({
@@ -460,7 +489,7 @@ export default function WorkoutDetailScreen({
                             )
                           }}
                         >
-                          <Ionicons name="remove" size={20} color="#44403c" />
+                          <StepperArrowIcon direction="left" color="#44403c" />
                         </TouchableOpacity>
                         <Text style={styles.stepperValue}>
                           {editingSetReps || '0'}
@@ -474,7 +503,7 @@ export default function WorkoutDetailScreen({
                             saveSetToApi(s, v, editingSetWeight, false)
                           }}
                         >
-                          <Ionicons name="add" size={20} color="#44403c" />
+                          <StepperArrowIcon direction="right" color="#44403c" />
                         </TouchableOpacity>
                       </View>
                       <View style={styles.setEditRight}>
@@ -526,7 +555,7 @@ export default function WorkoutDetailScreen({
                           setNewSetReps(String(isNaN(v) ? 0 : v))
                         }}
                       >
-                        <Ionicons name="remove" size={20} color="#44403c" />
+                        <StepperArrowIcon direction="left" color="#44403c" />
                       </TouchableOpacity>
                       <Text style={styles.stepperValue}>
                         {newSetReps || '0'}
@@ -538,7 +567,7 @@ export default function WorkoutDetailScreen({
                           setNewSetReps(String(v))
                         }}
                       >
-                        <Ionicons name="add" size={20} color="#44403c" />
+                        <StepperArrowIcon direction="right" color="#44403c" />
                       </TouchableOpacity>
                     </View>
                     <TextInput
@@ -740,7 +769,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#e7e5e4',
     justifyContent: 'center',
     alignItems: 'center',
   },
