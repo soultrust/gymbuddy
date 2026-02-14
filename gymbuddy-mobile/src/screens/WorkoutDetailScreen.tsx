@@ -283,6 +283,21 @@ export default function WorkoutDetailScreen({
     }
   }
 
+  const confirmDeleteSet = (set: SetEntry) => {
+    Alert.alert(
+      'Delete set',
+      'Are you sure you want to delete this set? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDeleteSet(set),
+        },
+      ]
+    )
+  }
+
   const handleDeleteWorkout = async () => {
     if (!token || !workout) return
 
@@ -479,17 +494,14 @@ export default function WorkoutDetailScreen({
                       ]}
                     >
                       <View style={styles.setLabelRow}>
-                        <Text style={styles.setLabel}>Set {s.order}</Text>
                         <TouchableOpacity
-                          onPress={() => handleDeleteSet(s)}
+                          onPress={() => confirmDeleteSet(s)}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{ padding: 2 }}
                         >
-                          <Ionicons
-                            name="trash-outline"
-                            size={18}
-                            color="#78716c"
-                          />
+                          <Ionicons name="close-outline" size={24} color="#000" />
                         </TouchableOpacity>
+                        <Text style={styles.setLabel}>Set {s.order}</Text>
                       </View>
                       <View style={styles.stepper}>
                         <TouchableOpacity
