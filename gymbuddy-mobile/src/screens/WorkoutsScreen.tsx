@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import Svg, { Path } from 'react-native-svg'
 
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
@@ -61,6 +62,34 @@ type Workout = {
   name: string
   notes: string
   exercises: PerformedExercise[]
+}
+
+/** Play-style arrow (right-pointing). Set direction="left" for previous. */
+function TableArrowIcon({
+  direction,
+  color,
+  size = 20,
+}: {
+  direction: 'left' | 'right'
+  color: string
+  size?: number
+}) {
+  const path =
+    'M21.415,12.554 L2.418,0.311 C1.291,-0.296 0,-0.233 0,1.946 L0,26.054 C0,28.046 1.385,28.36 2.418,27.689 L21.415,15.446 C22.197,14.647 22.197,13.353 21.415,12.554'
+  const flip = direction === 'left'
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="-1 -1 26 30"
+      style={[
+        { backgroundColor: 'transparent' },
+        flip ? { transform: [{ scaleX: -1 }] } : undefined,
+      ]}
+    >
+      <Path fill={color} d={path} />
+    </Svg>
+  )
 }
 
 export default function WorkoutsScreen({ navigation }: NavProps) {
@@ -174,7 +203,8 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
               body: {
                 order: s.order,
                 reps: s.reps,
-                weight: s.weight != null && s.weight !== '' ? Number(s.weight) : null,
+                weight:
+                  s.weight != null && s.weight !== '' ? Number(s.weight) : null,
                 notes: s.notes ?? '',
               },
             })
@@ -471,14 +501,10 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   disabled={!canGoPrev}
                   style={[styles.arrowBtn, !canGoPrev && styles.arrowDisabled]}
                 >
-                  <Text
-                    style={[
-                      styles.arrowText,
-                      !canGoPrev && styles.arrowTextDisabled,
-                    ]}
-                  >
-                    ‹
-                  </Text>
+                  <TableArrowIcon
+                    direction="left"
+                    color={canGoPrev ? '#fff4e6' : 'rgb(255 255 255 / 0.3)'}
+                  />
                 </TouchableOpacity>
                 <View style={styles.exerciseNameColumn}>
                   {exerciseColumns.length > 1 && (
@@ -499,14 +525,10 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   disabled={!canGoNext}
                   style={[styles.arrowBtn, !canGoNext && styles.arrowDisabled]}
                 >
-                  <Text
-                    style={[
-                      styles.arrowText,
-                      !canGoNext && styles.arrowTextDisabled,
-                    ]}
-                  >
-                    ›
-                  </Text>
+                  <TableArrowIcon
+                    direction="right"
+                    color={canGoNext ? '#fff4e6' : 'rgb(255 255 255 / 0.3)'} //'#a8a29e'
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -768,19 +790,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#f59e0b',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 3,
+    // elevation: 3,
   },
-  arrowDisabled: {
-    backgroundColor: '#fff4e6',
-  },
+  arrowDisabled: {},
   arrowText: {
     fontSize: 20,
     fontWeight: '600',
