@@ -13,7 +13,7 @@ from rest_framework.mixins import (
     UpdateModelMixin,
     DestroyModelMixin,
 )
-from .models import WorkoutSession, PerformedExercise, SetEntry, Exercise
+from .models import WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
 from .serializers import (
     WorkoutSessionSerializer,
     PerformedExerciseSerializer,
@@ -130,6 +130,20 @@ class PerformedExerciseViewSet(viewsets.ModelViewSet):
     def sets(self, request, pk=None):
         """POST /api/workout-exercises/{id}/sets/ - add one set to exercise"""
         return self._add_set(self.get_object(), request)
+
+    @action(detail=True, methods=["post"])
+    def note_for_next_time(self, request, pk=None):
+        """POST /api/v1/performed-exercises/{id}/note_for_next_time/ - save note for next time user does this exercise."""
+        performed = self.get_object()
+        note = request.data.get("note", "")
+        if not isinstance(note, str):
+            note = str(note) if note is not None else ""
+        obj, _ = UserExerciseNote.objects.update_or_create(
+            user=request.user,
+            exercise=performed.exercise,
+            defaults={"note": note.strip()},
+        )
+        return Response({"note_for_next_time": obj.note})
 
 
 class SetEntryViewSet(

@@ -33,6 +33,7 @@ type PerformedExercise = {
   user_preferred_name?: string
   order: number
   sets: SetEntry[]
+  note_for_next_time?: string
 }
 
 type SetEntry = {
@@ -102,7 +103,25 @@ export default function WorkoutDetailScreen({
   const [editingSetWeight, setEditingSetWeight] = useState('')
   const [editingDate, setEditingDate] = useState(false)
   const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
+  const [expandedNotesFor, setExpandedNotesFor] = useState<number | null>(null)
+  const [exerciseNotes, setExerciseNotes] = useState<
+    Record<number, { todayNotes: string; nextTimeNote: string }>
+  >({})
   const fadeAnim = useRef(new Animated.Value(0)).current
+
+  const getNotesFor = (peId: number) =>
+    exerciseNotes[peId] ?? { todayNotes: '', nextTimeNote: '' }
+  const setNotesFor = (
+    peId: number,
+    updater: (prev: { todayNotes: string; nextTimeNote: string }) => {
+      todayNotes: string
+      nextTimeNote: string
+    },
+  ) =>
+    setExerciseNotes((prev) => ({
+      ...prev,
+      [peId]: updater(prev[peId] ?? { todayNotes: '', nextTimeNote: '' }),
+    }))
 
   const fetchWorkout = useCallback(async () => {
     if (!token) return
@@ -448,7 +467,8 @@ export default function WorkoutDetailScreen({
                     {pe.user_preferred_name || pe.exercise.name}
                   </Text>
                 </View>
-                {pe.sets.map((s) =>
+                <View style={styles.cardBodyWrapper}>
+                  {pe.sets.map((s) =>
                   editingSetId === s.id ? (
                     <Animated.View
                       key={`editing-${s.id}`}
@@ -545,64 +565,135 @@ export default function WorkoutDetailScreen({
                     </View>
                   ),
                 )}
-                {addingSetFor === pe.id ? (
-                  <View style={styles.addSetRow}>
-                    <View style={styles.stepper}>
+                <View style={styles.addSetNotesRow}>
+                  {addingSetFor === pe.id ? (
+                    <View style={styles.addSetRow}>
+                      <View style={styles.stepper}>
+                        <TouchableOpacity
+                          style={styles.stepperBtn}
+                          onPress={() => {
+                            const v = Math.max(0, parseInt(newSetReps, 10) - 1)
+                            setNewSetReps(String(isNaN(v) ? 0 : v))
+                          }}
+                        >
+                          <StepperArrowIcon direction="left" color="#44403c" />
+                        </TouchableOpacity>
+                        <Text style={styles.stepperValue}>
+                          {newSetReps || '0'}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.stepperBtn}
+                          onPress={() => {
+                            const v = (parseInt(newSetReps, 10) || 0) + 1
+                            setNewSetReps(String(v))
+                          }}
+                        >
+                          <StepperArrowIcon direction="right" color="#44403c" />
+                        </TouchableOpacity>
+                      </View>
+                      <TextInput
+                        style={styles.inputSmall}
+                        value={newSetWeight}
+                        onChangeText={(t) => setWeightInteger(setNewSetWeight, t)}
+                        placeholder="Weight"
+                        keyboardType="numeric"
+                      />
                       <TouchableOpacity
-                        style={styles.stepperBtn}
-                        onPress={() => {
-                          const v = Math.max(0, parseInt(newSetReps, 10) - 1)
-                          setNewSetReps(String(isNaN(v) ? 0 : v))
-                        }}
+                        onPress={() => handleAddSet(pe.id, pe.sets)}
                       >
-                        <StepperArrowIcon direction="left" color="#44403c" />
+                        <Text style={styles.addSetBtnText}>Save</Text>
                       </TouchableOpacity>
-                      <Text style={styles.stepperValue}>
-                        {newSetReps || '0'}
-                      </Text>
                       <TouchableOpacity
-                        style={styles.stepperBtn}
-                        onPress={() => {
-                          const v = (parseInt(newSetReps, 10) || 0) + 1
-                          setNewSetReps(String(v))
-                        }}
+                        onPress={() => setAddingSetFor(null)}
+                        style={styles.cancelBtn}
                       >
-                        <StepperArrowIcon direction="right" color="#44403c" />
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
                       </TouchableOpacity>
                     </View>
-                    <TextInput
-                      style={styles.inputSmall}
-                      value={newSetWeight}
-                      onChangeText={(t) => setWeightInteger(setNewSetWeight, t)}
-                      placeholder="Weight"
-                      keyboardType="numeric"
-                    />
+                  ) : (
                     <TouchableOpacity
-                      onPress={() => handleAddSet(pe.id, pe.sets)}
+                      onPress={() => {
+                        setAddingSetFor(pe.id)
+                        const last = pe.sets[pe.sets.length - 1]
+                        if (last) {
+                          setNewSetReps(String(last.reps))
+                          setNewSetWeight(formatWeight(last.weight))
+                        }
+                      }}
                     >
-                      <Text style={styles.addSetBtnText}>Save</Text>
+                      <Text style={styles.addSetLink}>+ Add set</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setAddingSetFor(null)}
-                      style={styles.cancelBtn}
-                    >
-                      <Text style={styles.cancelBtnText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
+                  )}
                   <TouchableOpacity
-                    onPress={() => {
-                      setAddingSetFor(pe.id)
-                      const last = pe.sets[pe.sets.length - 1]
-                      if (last) {
-                        setNewSetReps(String(last.reps))
-                        setNewSetWeight(formatWeight(last.weight))
-                      }
-                    }}
+                    onPress={() => setExpandedNotesFor(pe.id)}
                   >
-                    <Text style={styles.addSetLink}>+ Add set</Text>
+                    <Text style={styles.notesLink}>Notes</Text>
                   </TouchableOpacity>
-                )}
+                </View>
+
+                  {expandedNotesFor === pe.id && (
+                    <View style={styles.notesOverlay}>
+                      <View style={styles.notesPanel}>
+                        {pe.note_for_next_time ? (
+                          <View style={styles.notesFromLastTime}>
+                            <Text style={styles.notesFromLastTimeLabel}>
+                              Note from last time
+                            </Text>
+                            <Text style={styles.notesFromLastTimeText}>
+                              {pe.note_for_next_time}
+                            </Text>
+                          </View>
+                        ) : null}
+                        <View style={styles.notesSection}>
+                          <Text style={styles.notesLabel}>
+                            Notes{' '}
+                            <Text style={styles.notesLabelHint}>
+                              (this will show the next time you do this exercise)
+                            </Text>
+                          </Text>
+                          <TextInput
+                            style={styles.notesInput}
+                            placeholder="e.g. Increase weight to 5 lbs"
+                            placeholderTextColor="#a8a29e"
+                            multiline
+                            value={getNotesFor(pe.id).nextTimeNote}
+                            onChangeText={(text) =>
+                              setNotesFor(pe.id, (prev) => ({
+                                ...prev,
+                                nextTimeNote: text,
+                              }))
+                            }
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={styles.notesDoneBtn}
+                          onPress={async () => {
+                            const note = getNotesFor(pe.id).nextTimeNote
+                            try {
+                              await apiRequest(
+                                `/performed-exercises/${pe.id}/note_for_next_time/`,
+                                {
+                                  method: 'POST',
+                                  body: { note: note ?? '' },
+                                  token,
+                                }
+                              )
+                              setExpandedNotesFor(null)
+                              fetchWorkout()
+                            } catch (e) {
+                              Alert.alert(
+                                'Could not save note',
+                                (e as Error)?.message ?? 'Please try again.'
+                              )
+                            }
+                          }}
+                        >
+                          <Text style={styles.notesDoneText}>Done</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
               </View>
             )
           })
@@ -835,10 +926,89 @@ const styles = StyleSheet.create({
   cancelBtn: { paddingHorizontal: 8 },
   cancelBtnText: { color: '#78716c', fontSize: 14 },
   addSetLink: {
-    marginTop: 8,
+    marginTop: 0,
     fontSize: 14,
     color: '#d97706',
     fontWeight: '600',
+  },
+  addSetNotesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  notesLink: {
+    fontSize: 14,
+    color: '#d97706',
+    fontWeight: '600',
+  },
+  cardBodyWrapper: {
+    position: 'relative',
+  },
+  notesOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff4e6',
+  },
+  notesPanel: {
+    marginTop: 4,
+  },
+  notesFromLastTime: {
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: '#ffedd2',
+    borderRadius: 8,
+  },
+  notesFromLastTimeLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#78716c',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  notesFromLastTimeText: {
+    fontSize: 14,
+    color: '#44403c',
+  },
+  notesSection: {
+    marginBottom: 12,
+  },
+  notesLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#44403c',
+    marginBottom: 6,
+  },
+  notesLabelHint: {
+    fontWeight: '400',
+    color: '#78716c',
+    fontSize: 12,
+  },
+  notesInput: {
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+    backgroundColor: '#fff4e6',
+    textAlignVertical: 'top',
+  },
+  notesDoneBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  notesDoneText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#d97706',
   },
   addExerciseRow: {
     flexDirection: 'row',

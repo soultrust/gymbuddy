@@ -66,3 +66,24 @@ class SetEntry(models.Model):
     class Meta:
         ordering = ["order"]
         unique_together = ("performed_exercise", "order")
+
+
+class UserExerciseNote(models.Model):
+    """Note for next time the user does this exercise (one per user per exercise type)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="exercise_notes",
+    )
+    exercise = models.ForeignKey(
+        Exercise,
+        on_delete=models.CASCADE,
+        related_name="user_notes",
+    )
+    note = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "exercise")
+        ordering = ["-updated_at"]
