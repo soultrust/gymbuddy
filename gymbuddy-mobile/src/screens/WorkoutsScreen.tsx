@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -18,11 +19,18 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
 
+type TemplateSetEntry = {
+  order: number
+  reps: number
+  weight?: string | number | null
+  notes?: string
+}
+
 type TemplateExercise = {
   exercise: { id: number; name: string }
   user_preferred_name?: string
   order: number
-  last_sets?: unknown[]
+  last_sets?: TemplateSetEntry[]
 }
 
 type NavProps = {
@@ -69,6 +77,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
+  const [useTemplate, setUseTemplate] = useState(true)
 
   const fetchWorkouts = useCallback(async () => {
     if (!token) return
@@ -143,20 +152,39 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
           notes: createNotes.trim() || '',
         },
       })
-      for (const t of template) {
-        await apiRequest(`/workouts/${workout.id}/exercises/`, {
-          method: 'POST',
-          token,
-          body: {
-            exercise: t.exercise.id,
-            user_preferred_name: t.user_preferred_name || '',
-            order: t.order,
-          },
-        })
+      if (useTemplate && template.length > 0) {
+        for (const t of template) {
+          const performed = await apiRequest<PerformedExercise>(
+            `/workouts/${workout.id}/exercises/`,
+            {
+              method: 'POST',
+              token,
+              body: {
+                exercise: t.exercise.id,
+                user_preferred_name: t.user_preferred_name || '',
+                order: t.order,
+              },
+            },
+          )
+          const sets = t.last_sets ?? []
+          for (const s of sets) {
+            await apiRequest(`/performed-exercises/${performed.id}/sets/`, {
+              method: 'POST',
+              token,
+              body: {
+                order: s.order,
+                reps: s.reps,
+                weight: s.weight != null && s.weight !== '' ? Number(s.weight) : null,
+                notes: s.notes ?? '',
+              },
+            })
+          }
+        }
       }
       setShowCreateForm(false)
       setCreateDate(new Date())
       setCreateNotes('')
+      setUseTemplate(true)
       await fetchWorkouts()
       if (workout.id) {
         navigation.navigate('WorkoutDetail', { workoutId: workout.id })
@@ -301,7 +329,19 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             style={styles.modalContent}
           >
             <Text style={styles.modalTitle}>New Workout</Text>
-            {template.length > 0 && (
+            <View style={styles.templateCheckRow}>
+              <Switch
+                value={useTemplate}
+                onValueChange={setUseTemplate}
+                disabled={createSubmitting}
+                trackColor={{ false: '#d6d3d1', true: '#f59e0b' }}
+                thumbColor="#fff"
+              />
+              <Text style={styles.templateCheckLabel}>
+                Use previous session as starting template
+              </Text>
+            </View>
+            {useTemplate && template.length > 0 && (
               <Text style={styles.modalTemplate}>
                 Based on last workout:{' '}
                 {template.map((t) => t.exercise.name).join(', ')}
@@ -596,6 +636,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#57534e',
     marginBottom: 16,
+  },
+  templateCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  templateCheckLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#44403c',
   },
   inputLabel: {
     fontSize: 14,
