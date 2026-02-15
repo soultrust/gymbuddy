@@ -772,7 +772,9 @@ export default function WorkoutDetailScreen({
                           <TouchableOpacity
                             style={styles.notesDoneBtn}
                             onPress={async () => {
-                              const note = (getNotesFor(pe.id).nextTimeNote ?? '').trim()
+                              const note = (
+                                getNotesFor(pe.id).nextTimeNote ?? ''
+                              ).trim()
                               setExpandedNotesFor(null)
                               if (note.length === 0) return
                               try {
@@ -843,7 +845,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
     borderBottomColor: '#e7e5e4',
   },
@@ -897,22 +899,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff4e6',
     borderRadius: 12,
     borderColor: '#e7e5e4',
-    padding: 16,
+    // padding: 16,
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 8,
+    overflow: 'hidden',
   },
   exerciseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#5A4A2F',
-    marginHorizontal: -16,
-    marginTop: -16,
-    marginBottom: 12,
+    // marginHorizontal: -16,
+    // marginTop: -16,
+    // marginBottom: 12,
     paddingLeft: 16,
     paddingRight: 6,
     paddingVertical: 10,
@@ -1051,6 +1054,8 @@ const styles = StyleSheet.create({
   },
   cardBodyWrapper: {
     position: 'relative',
+    backgroundColor: '#fff4e6',
+    padding: 16,
   },
   notesOverlay: {
     position: 'absolute',
@@ -1061,7 +1066,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff4e6',
   },
   notesPanel: {
-    marginTop: 4,
+    marginTop: 0,
+    padding: 16,
   },
   notesFromLastTime: {
     marginBottom: 12,
@@ -1103,14 +1109,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     fontSize: 14,
-    backgroundColor: '#fff4e6',
+    backgroundColor: '#fff',
     textAlignVertical: 'top',
   },
   notesDoneBtn: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
   },
   notesDoneText: {
