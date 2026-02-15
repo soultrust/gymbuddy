@@ -677,34 +677,42 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 </TouchableOpacity>
               </View>
             </View>
-            {workouts.map((item) => {
-              const pe = selectedExercise
-                ? getExerciseForWorkout(item, selectedExercise.id)
-                : null
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.row}
-                  onPress={() =>
-                    navigation.navigate('WorkoutDetail', { workoutId: item.id })
-                  }
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.tdTitle}>
-                    <Text style={styles.rowTitle} numberOfLines={1}>
-                      {formatMonthDay(item.date)}
-                    </Text>
-                  </View>
-                  <View style={styles.tdExercise}>
-                    {pe ? (
-                      renderSetChips(pe)
-                    ) : (
-                      <Text style={styles.dash}>—</Text>
-                    )}
-                  </View>
-                </TouchableOpacity>
+            {workouts
+              .filter(
+                (item) =>
+                  !selectedExercise ||
+                  getExerciseForWorkout(item, selectedExercise.id) != null,
               )
-            })}
+              .map((item) => {
+                const pe = selectedExercise
+                  ? getExerciseForWorkout(item, selectedExercise.id)
+                  : null
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.row}
+                    onPress={() =>
+                      navigation.navigate('WorkoutDetail', {
+                        workoutId: item.id,
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.tdTitle}>
+                      <Text style={styles.rowTitle} numberOfLines={1}>
+                        {formatMonthDay(item.date)}
+                      </Text>
+                    </View>
+                    <View style={styles.tdExercise}>
+                      {pe ? (
+                        renderSetChips(pe)
+                      ) : (
+                        <Text style={styles.dash}>—</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )
+              })}
           </View>
         </ScrollView>
       )}
