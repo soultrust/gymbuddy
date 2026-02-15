@@ -107,6 +107,9 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
   const [useTemplate, setUseTemplate] = useState(true)
+  const [useSessionTemplate, setUseSessionTemplate] = useState(false)
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
+  const [sessionDropdownOpen, setSessionDropdownOpen] = useState(false)
 
   const fetchWorkouts = useCallback(async () => {
     if (!token) return
@@ -172,16 +175,29 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     setCreateSubmitting(true)
     try {
       const dateISO = createDate.toISOString().slice(0, 10)
+      const body: {
+        date: string
+        name: string
+        notes: string
+        template_session_id?: number
+      } = {
+        date: `${dateISO}T12:00:00.000Z`,
+        name: '',
+        notes: createNotes.trim() || '',
+      }
+      if (useSessionTemplate && selectedSessionId != null) {
+        body.template_session_id = selectedSessionId
+      }
       const workout = await apiRequest<Workout>('/workouts/', {
         method: 'POST',
         token,
-        body: {
-          date: `${dateISO}T12:00:00.000Z`,
-          name: '',
-          notes: createNotes.trim() || '',
-        },
+        body,
       })
-      if (useTemplate && template.length > 0) {
+      if (
+        useTemplate &&
+        !(useSessionTemplate && selectedSessionId != null) &&
+        template.length > 0
+      ) {
         for (const t of template) {
           const performed = await apiRequest<PerformedExercise>(
             `/workouts/${workout.id}/exercises/`,
@@ -195,7 +211,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
               },
             },
           )
-          const sets = t.last_sets ?? []
+          const sets = (t as TemplateExercise).last_sets ?? []
           for (const s of sets) {
             await apiRequest(`/performed-exercises/${performed.id}/sets/`, {
               method: 'POST',
@@ -215,6 +231,9 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
       setCreateDate(new Date())
       setCreateNotes('')
       setUseTemplate(true)
+      setUseSessionTemplate(false)
+      setSelectedSessionId(null)
+      setSessionDropdownOpen(false)
       await fetchWorkouts()
       if (workout.id) {
         navigation.navigate('WorkoutDetail', { workoutId: workout.id })
@@ -245,6 +264,15 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     const dd = String(date.getDate()).padStart(2, '0')
     return `${mm}/${dd}`
   }
+
+  /** Format as "Sat, Feb 14, 2026" for session dropdown */
+  const formatSessionDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
 
   // Build ordered list of exercises (by first appearance across workouts)
   const exerciseColumns = useMemo(() => {
@@ -340,6 +368,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
           if (!createSubmitting) {
             setShowCreateForm(false)
             setShowDatePicker(false)
+            setSessionDropdownOpen(false)
           }
         }}
       >
@@ -350,6 +379,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             if (!createSubmitting) {
               setShowCreateForm(false)
               setShowDatePicker(false)
+              setSessionDropdownOpen(false)
             }
           }}
         >
@@ -358,7 +388,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             onPress={() => {}}
             style={styles.modalContent}
           >
-            <Text style={styles.modalTitle}>New Workout</Text>
+            <Text style={styles.modalTitle}>New Session</Text>
             <View style={styles.templateCheckRow}>
               <Switch
                 value={useTemplate}
@@ -376,6 +406,93 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 Based on last workout:{' '}
                 {template.map((t) => t.exercise.name).join(', ')}
               </Text>
+            )}
+            <View style={styles.templateCheckRow}>
+              <Switch
+                value={useSessionTemplate}
+                onValueChange={(v) => {
+                  setUseSessionTemplate(v)
+                  if (!v) {
+                    setSelectedSessionId(null)
+                    setSessionDropdownOpen(false)
+                  }
+                }}
+                disabled={createSubmitting}
+                trackColor={{ false: '#d6d3d1', true: '#f59e0b' }}
+                thumbColor="#fff"
+              />
+              <Text style={styles.templateCheckLabel}>
+                use another session as a starting template
+              </Text>
+            </View>
+            {useSessionTemplate && (
+              <>
+                <Text style={styles.inputLabel}>Session</Text>
+                <TouchableOpacity
+                  style={styles.modalInput}
+                  onPress={() =>
+                    !createSubmitting &&
+                    setSessionDropdownOpen((open) => !open)
+                  }
+                  disabled={createSubmitting}
+                >
+                  <Text style={styles.dateButtonText}>
+                    {selectedSessionId != null
+                      ? formatSessionDate(
+                          workouts.find((w) => w.id === selectedSessionId)
+                            ?.date ?? '',
+                        )
+                      : 'Select a session...'}
+                  </Text>
+                </TouchableOpacity>
+                {sessionDropdownOpen && workouts.length > 0 && (
+                  <View style={styles.sessionDropdownList}>
+                    {[...workouts]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.date).getTime() -
+                          new Date(a.date).getTime(),
+                      )
+                      .map((w) => (
+                        <TouchableOpacity
+                          key={w.id}
+                          style={[
+                            styles.sessionDropdownItem,
+                            selectedSessionId === w.id &&
+                              styles.sessionDropdownItemSelected,
+                          ]}
+                          onPress={() => {
+                            setSelectedSessionId(w.id)
+                            setSessionDropdownOpen(false)
+                          }}
+                        >
+                          <Text style={styles.sessionDropdownItemText}>
+                            {formatSessionDate(w.date)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                  </View>
+                )}
+                {selectedSessionId != null && (() => {
+                  const w = workouts.find(
+                    (wo) => wo.id === selectedSessionId,
+                  )
+                  const exercises =
+                    w?.exercises
+                      ?.map(
+                        (pe) =>
+                          pe.user_preferred_name || pe.exercise?.name || '',
+                      )
+                      .filter(Boolean) ?? []
+                  if (exercises.length === 0) return null
+                  return (
+                    <Text style={styles.sessionExercisesPreview}>
+                      Exercises in this session:{' '}
+                      {exercises.join(', ')}
+                    </Text>
+                  )
+                })()}
+              </>
             )}
             <Text style={styles.inputLabel}>Date</Text>
             <TouchableOpacity
@@ -436,6 +553,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   if (!createSubmitting) {
                     setShowCreateForm(false)
                     setShowDatePicker(false)
+                    setSessionDropdownOpen(false)
                   }
                 }}
                 disabled={createSubmitting}
@@ -642,7 +760,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffdfb8',
     borderRadius: 12,
     padding: 24,
     width: '100%',
@@ -659,6 +777,12 @@ const styles = StyleSheet.create({
     color: '#57534e',
     marginBottom: 16,
   },
+  sessionExercisesPreview: {
+    fontSize: 14,
+    color: '#57534e',
+    marginTop: 8,
+    marginBottom: 16,
+  },
   templateCheckRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -668,6 +792,29 @@ const styles = StyleSheet.create({
   templateCheckLabel: {
     flex: 1,
     fontSize: 15,
+    color: '#44403c',
+  },
+  sessionDropdownList: {
+    maxHeight: 200,
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  sessionDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e7e5e4',
+    backgroundColor: '#fff',
+  },
+  sessionDropdownItemSelected: {
+    backgroundColor: '#ffedd2',
+  },
+  sessionDropdownItemText: {
+    fontSize: 16,
     color: '#44403c',
   },
   inputLabel: {
@@ -684,6 +831,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 16,
+    backgroundColor: '#fff',
   },
   dateButtonText: {
     fontSize: 16,
@@ -706,6 +854,7 @@ const styles = StyleSheet.create({
   modalTextArea: {
     minHeight: 80,
     textAlignVertical: 'top',
+    backgroundColor: '#fff',
   },
   modalError: {
     color: '#dc2626',

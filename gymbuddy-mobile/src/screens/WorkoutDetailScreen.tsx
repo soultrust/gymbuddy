@@ -751,8 +751,7 @@ export default function WorkoutDetailScreen({
                               <Text style={styles.notesLabel}>
                                 Notes{' '}
                                 <Text style={styles.notesLabelHint}>
-                                  (this will show the next time you do this
-                                  exercise)
+                                  (shown on the next instance of this exercise)
                                 </Text>
                               </Text>
                               <TextInput

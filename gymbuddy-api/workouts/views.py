@@ -47,6 +47,49 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
 
+    def _copy_session_as_template(self, new_workout, template_workout_id):
+        """Copy exercises and sets from template_workout_id (must be user's) into new_workout."""
+        template = self.get_queryset().filter(id=template_workout_id).first()
+        if not template:
+            return
+        for pe in template.exercises.all().order_by("order"):
+            new_pe = PerformedExercise.objects.create(
+                workout=new_workout,
+                exercise=pe.exercise,
+                user_preferred_name=pe.user_preferred_name or "",
+                order=pe.order,
+            )
+            for s in pe.sets.all().order_by("order"):
+                SetEntry.objects.create(
+                    performed_exercise=new_pe,
+                    order=s.order,
+                    reps=s.reps,
+                    weight=s.weight,
+                    notes=s.notes or "",
+                )
+
+    def create(self, request, *args, **kwargs):
+        data = dict(request.data)
+        template_session_id = data.pop("template_session_id", None)
+        if template_session_id is not None:
+            try:
+                template_session_id = int(template_session_id)
+            except (TypeError, ValueError):
+                template_session_id = None
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        new_workout = serializer.instance
+        if template_session_id is not None:
+            self._copy_session_as_template(new_workout, template_session_id)
+            # Re-fetch so response includes the copied exercises
+            new_workout = self.get_queryset().get(pk=new_workout.pk)
+            serializer = self.get_serializer(new_workout)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
     def perform_create(self, serializer):
         kwargs = {"user": self.request.user}
         if "date" in serializer.validated_data:
