@@ -7,7 +7,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -64,6 +63,8 @@ type Workout = {
   exercises: PerformedExercise[]
 }
 
+type TemplateSource = 'previous' | 'another' | 'none'
+
 /** Play-style arrow (right-pointing). Set direction="left" for previous. */
 function TableArrowIcon({
   direction,
@@ -106,8 +107,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
-  const [useTemplate, setUseTemplate] = useState(true)
-  const [useSessionTemplate, setUseSessionTemplate] = useState(false)
+  const [templateSource, setTemplateSource] = useState<TemplateSource>('previous')
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
   const [sessionDropdownOpen, setSessionDropdownOpen] = useState(false)
 
@@ -183,7 +183,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         date: `${dateISO}T12:00:00.000Z`,
         notes: createNotes.trim() || '',
       }
-      if (useSessionTemplate && selectedSessionId != null) {
+      if (templateSource === 'another' && selectedSessionId != null) {
         body.template_session_id = selectedSessionId
       }
       const workout = await apiRequest<Workout>('/workouts/', {
@@ -191,11 +191,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         token,
         body,
       })
-      if (
-        useTemplate &&
-        !(useSessionTemplate && selectedSessionId != null) &&
-        template.length > 0
-      ) {
+      if (templateSource === 'previous' && template.length > 0) {
         for (const t of template) {
           const performed = await apiRequest<PerformedExercise>(
             `/workouts/${workout.id}/exercises/`,
@@ -228,8 +224,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
       setShowCreateForm(false)
       setCreateDate(new Date())
       setCreateNotes('')
-      setUseTemplate(true)
-      setUseSessionTemplate(false)
+      setTemplateSource('previous')
       setSelectedSessionId(null)
       setSessionDropdownOpen(false)
       await fetchWorkouts()
@@ -387,43 +382,55 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             style={styles.modalContent}
           >
             <Text style={styles.modalTitle}>New Session</Text>
-            <View style={styles.templateCheckRow}>
-              <Switch
-                value={useTemplate}
-                onValueChange={setUseTemplate}
-                disabled={createSubmitting}
-                trackColor={{ false: '#d6d3d1', true: '#f59e0b' }}
-                thumbColor="#fff"
-              />
-              <Text style={styles.templateCheckLabel}>
+            <Text style={styles.radioGroupLabel}>Template</Text>
+            <TouchableOpacity
+              style={styles.radioRow}
+              onPress={() => !createSubmitting && setTemplateSource('previous')}
+              disabled={createSubmitting}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.radioOuter,
+                  templateSource === 'previous' && styles.radioOuterSelected,
+                ]}
+              >
+                {templateSource === 'previous' && <View style={styles.radioInner} />}
+              </View>
+              <Text style={styles.radioLabel}>
                 Use previous session as starting template
               </Text>
-            </View>
-            {useTemplate && template.length > 0 && (
+            </TouchableOpacity>
+            {templateSource === 'previous' && template.length > 0 && (
               <Text style={styles.modalTemplate}>
                 Based on last workout:{' '}
                 {template.map((t) => t.exercise.name).join(', ')}
               </Text>
             )}
-            <View style={styles.templateCheckRow}>
-              <Switch
-                value={useSessionTemplate}
-                onValueChange={(v) => {
-                  setUseSessionTemplate(v)
-                  if (!v) {
-                    setSelectedSessionId(null)
-                    setSessionDropdownOpen(false)
-                  }
-                }}
-                disabled={createSubmitting}
-                trackColor={{ false: '#d6d3d1', true: '#f59e0b' }}
-                thumbColor="#fff"
-              />
-              <Text style={styles.templateCheckLabel}>
-                use another session as a starting template
+            <TouchableOpacity
+              style={styles.radioRow}
+              onPress={() => {
+                if (!createSubmitting) {
+                  setTemplateSource('another')
+                  setSessionDropdownOpen(false)
+                }
+              }}
+              disabled={createSubmitting}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.radioOuter,
+                  templateSource === 'another' && styles.radioOuterSelected,
+                ]}
+              >
+                {templateSource === 'another' && <View style={styles.radioInner} />}
+              </View>
+              <Text style={styles.radioLabel}>
+                Use another session as a starting template
               </Text>
-            </View>
-            {useSessionTemplate && (
+            </TouchableOpacity>
+            {templateSource === 'another' && (
               <>
                 <Text style={styles.inputLabel}>Session</Text>
                 <TouchableOpacity
@@ -492,6 +499,28 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 })()}
               </>
             )}
+            <TouchableOpacity
+              style={styles.radioRow}
+              onPress={() => {
+                if (!createSubmitting) {
+                  setTemplateSource('none')
+                  setSelectedSessionId(null)
+                  setSessionDropdownOpen(false)
+                }
+              }}
+              disabled={createSubmitting}
+              activeOpacity={0.7}
+            >
+              <View
+                style={[
+                  styles.radioOuter,
+                  templateSource === 'none' && styles.radioOuterSelected,
+                ]}
+              >
+                {templateSource === 'none' && <View style={styles.radioInner} />}
+              </View>
+              <Text style={styles.radioLabel}>Start without a template</Text>
+            </TouchableOpacity>
             <Text style={styles.inputLabel}>Date</Text>
             <TouchableOpacity
               style={styles.modalInput}
@@ -769,6 +798,41 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1c1917',
     marginBottom: 16,
+  },
+  radioGroupLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#44403c',
+    marginBottom: 10,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#d6d3d1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: '#f59e0b',
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#f59e0b',
+  },
+  radioLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#44403c',
   },
   modalTemplate: {
     fontSize: 14,
