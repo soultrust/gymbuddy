@@ -3,12 +3,14 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Keyboard,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
@@ -283,6 +285,19 @@ export default function WorkoutDetailScreen({
     }
   }
 
+  const dismissEditSet = () => {
+    if (editingSetId === null || !workout) return
+    for (const pe of workout.exercises) {
+      const set = pe.sets.find((se) => se.id === editingSetId)
+      if (set) {
+        Keyboard.dismiss()
+        handleSaveSet(set)
+        return
+      }
+    }
+    setEditingSetId(null)
+  }
+
   const confirmDeleteSet = (set: SetEntry) => {
     Alert.alert(
       'Delete set',
@@ -294,7 +309,35 @@ export default function WorkoutDetailScreen({
           style: 'destructive',
           onPress: () => handleDeleteSet(set),
         },
-      ]
+      ],
+    )
+  }
+
+  const handleDeleteExercise = async (pe: PerformedExercise) => {
+    if (!token) return
+    try {
+      await apiRequest(`/performed-exercises/${pe.id}/`, {
+        method: 'DELETE',
+        token,
+      })
+      await fetchWorkout()
+    } catch {
+      // ignore
+    }
+  }
+
+  const confirmDeleteExercise = (pe: PerformedExercise) => {
+    Alert.alert(
+      'Delete exercise',
+      'Are you sure you want to remove this exercise from the workout? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => handleDeleteExercise(pe),
+        },
+      ],
     )
   }
 
@@ -469,268 +512,320 @@ export default function WorkoutDetailScreen({
         style={styles.content}
         contentContainerStyle={styles.contentInner}
       >
-        {workout.exercises.length === 0 ? (
-          <Text style={styles.empty}>No exercises yet. Add one below.</Text>
-        ) : (
-          workout.exercises.map((pe) => {
-            const lastSets = getLastSets(pe.exercise.id)
-            const lastText = formatLastSets(lastSets)
-            return (
-              <View key={pe.id} style={styles.exerciseCard}>
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseName}>
-                    {pe.user_preferred_name || pe.exercise.name}
-                  </Text>
-                </View>
-                <View style={styles.cardBodyWrapper}>
-                  {pe.sets.map((s) =>
-                  editingSetId === s.id ? (
-                    <Animated.View
-                      key={`editing-${s.id}`}
-                      style={[
-                        styles.setRow,
-                        styles.setRowEditing,
-                        { opacity: fadeAnim },
-                      ]}
-                    >
-                      <View style={styles.setLabelRow}>
-                        <TouchableOpacity
-                          onPress={() => confirmDeleteSet(s)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={{ padding: 2 }}
-                        >
-                          <Ionicons name="close-outline" size={24} color="#000" />
-                        </TouchableOpacity>
-                        <Text style={styles.setLabel}>Set {s.order}</Text>
-                      </View>
-                      <View style={styles.stepper}>
-                        <TouchableOpacity
-                          style={styles.stepperBtn}
-                          onPress={() => {
-                            const v = Math.max(
-                              0,
-                              parseInt(editingSetReps, 10) - 1,
-                            )
-                            const next = String(isNaN(v) ? 0 : v)
-                            setEditingSetReps(next)
-                            saveSetToApi(
-                              s,
-                              parseInt(next, 10),
-                              editingSetWeight,
-                              false,
-                            )
-                          }}
-                        >
-                          <StepperArrowIcon direction="left" color="#44403c" />
-                        </TouchableOpacity>
-                        <Text style={styles.stepperValue}>
-                          {editingSetReps || '0'}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.stepperBtn}
-                          onPress={() => {
-                            const v = (parseInt(editingSetReps, 10) || 0) + 1
-                            const next = String(v)
-                            setEditingSetReps(next)
-                            saveSetToApi(s, v, editingSetWeight, false)
-                          }}
-                        >
-                          <StepperArrowIcon direction="right" color="#44403c" />
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.setEditRight}>
-                        <TextInput
-                          style={styles.setInput}
-                          value={editingSetWeight}
-                          onChangeText={(t) =>
-                            setWeightInteger(setEditingSetWeight, t)
-                          }
-                          onBlur={() => handleSaveSet(s)}
-                          placeholder="lbs"
-                          keyboardType="numeric"
+        <TouchableWithoutFeedback onPress={dismissEditSet}>
+          <View>
+            {workout.exercises.length === 0 ? (
+              <Text style={styles.empty}>No exercises yet. Add one below.</Text>
+            ) : (
+              workout.exercises.map((pe) => {
+                const lastSets = getLastSets(pe.exercise.id)
+                const lastText = formatLastSets(lastSets)
+                return (
+                  <View key={pe.id} style={styles.exerciseCard}>
+                    <View style={styles.exerciseHeader}>
+                      <Text style={styles.exerciseName}>
+                        {pe.user_preferred_name || pe.exercise.name}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => confirmDeleteExercise(pe)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={{ padding: 2 }}
+                      >
+                        <Ionicons
+                          name="close-outline"
+                          size={24}
+                          color="#fff7ed"
                         />
-                      </View>
-                    </Animated.View>
-                  ) : (
-                    <View key={s.id} style={styles.setRow}>
-                      <View style={styles.setLabelRow}>
-                        <Text style={styles.setLabel}>Set {s.order}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.setValueTouchable}
-                        onPress={() => {
-                          setEditingSetId(s.id)
-                          setEditingSetReps(String(s.reps))
-                          setEditingSetWeight(formatWeight(s.weight))
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.setRepsCentered}>
-                          <Text style={styles.setValue}>{s.reps} reps</Text>
-                        </View>
-                        <Text style={styles.setValue}>
-                          {formatWeight(s.weight)
-                            ? `${formatWeight(s.weight)} lbs`
-                            : '—'}
-                        </Text>
                       </TouchableOpacity>
                     </View>
-                  ),
-                )}
-                <View style={styles.addSetNotesRow}>
-                  {addingSetFor === pe.id ? (
-                    <View style={styles.addSetRow}>
-                      <View style={styles.stepper}>
-                        <TouchableOpacity
-                          style={styles.stepperBtn}
-                          onPress={() => {
-                            const v = Math.max(0, parseInt(newSetReps, 10) - 1)
-                            setNewSetReps(String(isNaN(v) ? 0 : v))
-                          }}
-                        >
-                          <StepperArrowIcon direction="left" color="#44403c" />
-                        </TouchableOpacity>
-                        <Text style={styles.stepperValue}>
-                          {newSetReps || '0'}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.stepperBtn}
-                          onPress={() => {
-                            const v = (parseInt(newSetReps, 10) || 0) + 1
-                            setNewSetReps(String(v))
-                          }}
-                        >
-                          <StepperArrowIcon direction="right" color="#44403c" />
-                        </TouchableOpacity>
-                      </View>
-                      <TextInput
-                        style={styles.inputSmall}
-                        value={newSetWeight}
-                        onChangeText={(t) => setWeightInteger(setNewSetWeight, t)}
-                        placeholder="Weight"
-                        keyboardType="numeric"
-                      />
-                      <TouchableOpacity
-                        onPress={() => handleAddSet(pe.id, pe.sets)}
-                      >
-                        <Text style={styles.addSetBtnText}>Save</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => setAddingSetFor(null)}
-                        style={styles.cancelBtn}
-                      >
-                        <Text style={styles.cancelBtnText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setAddingSetFor(pe.id)
-                        const last = pe.sets[pe.sets.length - 1]
-                        if (last) {
-                          setNewSetReps(String(last.reps))
-                          setNewSetWeight(formatWeight(last.weight))
-                        }
-                      }}
-                    >
-                      <Text style={styles.addSetLink}>+ Add set</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => setExpandedNotesFor(pe.id)}
-                  >
-                    <Text style={styles.notesLink}>Notes</Text>
-                  </TouchableOpacity>
-                </View>
-
-                  {expandedNotesFor === pe.id && (
-                    <View style={styles.notesOverlay}>
-                      <View style={styles.notesPanel}>
-                        {pe.note_for_next_time ? (
-                          <View style={styles.notesFromLastTime}>
-                            <Text style={styles.notesFromLastTimeLabel}>
-                              Note from last time
-                            </Text>
-                            <Text style={styles.notesFromLastTimeText}>
-                              {pe.note_for_next_time}
-                            </Text>
+                    <View style={styles.cardBodyWrapper}>
+                      {pe.sets.map((s) =>
+                        editingSetId === s.id ? (
+                          <TouchableWithoutFeedback
+                            key={s.id}
+                            onPress={() => {}}
+                          >
+                            <Animated.View
+                              style={[
+                                styles.setRow,
+                                styles.setRowEditing,
+                                { opacity: fadeAnim },
+                              ]}
+                            >
+                              <View style={styles.setLabelRow}>
+                                <TouchableOpacity
+                                  onPress={() => confirmDeleteSet(s)}
+                                  hitSlop={{
+                                    top: 8,
+                                    bottom: 8,
+                                    left: 8,
+                                    right: 8,
+                                  }}
+                                  style={{ padding: 2 }}
+                                >
+                                  <Ionicons
+                                    name="close-outline"
+                                    size={24}
+                                    color="#000"
+                                  />
+                                </TouchableOpacity>
+                                <Text style={styles.setLabel}>
+                                  Set {s.order}
+                                </Text>
+                              </View>
+                              <View style={styles.stepper}>
+                                <TouchableOpacity
+                                  style={styles.stepperBtn}
+                                  onPress={() => {
+                                    const v = Math.max(
+                                      0,
+                                      parseInt(editingSetReps, 10) - 1,
+                                    )
+                                    const next = String(isNaN(v) ? 0 : v)
+                                    setEditingSetReps(next)
+                                    saveSetToApi(
+                                      s,
+                                      parseInt(next, 10),
+                                      editingSetWeight,
+                                      false,
+                                    )
+                                  }}
+                                >
+                                  <StepperArrowIcon
+                                    direction="left"
+                                    color="#44403c"
+                                  />
+                                </TouchableOpacity>
+                                <Text style={styles.stepperValue}>
+                                  {editingSetReps || '0'}
+                                </Text>
+                                <TouchableOpacity
+                                  style={styles.stepperBtn}
+                                  onPress={() => {
+                                    const v =
+                                      (parseInt(editingSetReps, 10) || 0) + 1
+                                    const next = String(v)
+                                    setEditingSetReps(next)
+                                    saveSetToApi(s, v, editingSetWeight, false)
+                                  }}
+                                >
+                                  <StepperArrowIcon
+                                    direction="right"
+                                    color="#44403c"
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                              <View style={styles.setEditRight}>
+                                <TextInput
+                                  style={styles.setInput}
+                                  value={editingSetWeight}
+                                  onChangeText={(t) =>
+                                    setWeightInteger(setEditingSetWeight, t)
+                                  }
+                                  onBlur={() => handleSaveSet(s)}
+                                  placeholder="lbs"
+                                  keyboardType="numeric"
+                                />
+                              </View>
+                            </Animated.View>
+                          </TouchableWithoutFeedback>
+                        ) : (
+                          <View key={s.id} style={styles.setRow}>
+                            <View style={styles.setLabelRow}>
+                              <Text style={styles.setLabel}>Set {s.order}</Text>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.setValueTouchable}
+                              onPress={() => {
+                                setEditingSetId(s.id)
+                                setEditingSetReps(String(s.reps))
+                                setEditingSetWeight(formatWeight(s.weight))
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <View style={styles.setRepsCentered}>
+                                <Text style={styles.setValue}>
+                                  {s.reps} reps
+                                </Text>
+                              </View>
+                              <Text style={styles.setValue}>
+                                {formatWeight(s.weight)
+                                  ? `${formatWeight(s.weight)} lbs`
+                                  : '—'}
+                              </Text>
+                            </TouchableOpacity>
                           </View>
-                        ) : null}
-                        <View style={styles.notesSection}>
-                          <Text style={styles.notesLabel}>
-                            Notes{' '}
-                            <Text style={styles.notesLabelHint}>
-                              (this will show the next time you do this exercise)
-                            </Text>
-                          </Text>
-                          <TextInput
-                            style={styles.notesInput}
-                            placeholder="e.g. Increase weight to 5 lbs"
-                            placeholderTextColor="#a8a29e"
-                            multiline
-                            value={getNotesFor(pe.id).nextTimeNote}
-                            onChangeText={(text) =>
-                              setNotesFor(pe.id, (prev) => ({
-                                ...prev,
-                                nextTimeNote: text,
-                              }))
-                            }
-                          />
-                        </View>
+                        ),
+                      )}
+                      <View style={styles.addSetNotesRow}>
+                        {addingSetFor === pe.id ? (
+                          <View style={styles.addSetRow}>
+                            <View style={styles.stepper}>
+                              <TouchableOpacity
+                                style={styles.stepperBtn}
+                                onPress={() => {
+                                  const v = Math.max(
+                                    0,
+                                    parseInt(newSetReps, 10) - 1,
+                                  )
+                                  setNewSetReps(String(isNaN(v) ? 0 : v))
+                                }}
+                              >
+                                <StepperArrowIcon
+                                  direction="left"
+                                  color="#44403c"
+                                />
+                              </TouchableOpacity>
+                              <Text style={styles.stepperValue}>
+                                {newSetReps || '0'}
+                              </Text>
+                              <TouchableOpacity
+                                style={styles.stepperBtn}
+                                onPress={() => {
+                                  const v = (parseInt(newSetReps, 10) || 0) + 1
+                                  setNewSetReps(String(v))
+                                }}
+                              >
+                                <StepperArrowIcon
+                                  direction="right"
+                                  color="#44403c"
+                                />
+                              </TouchableOpacity>
+                            </View>
+                            <TextInput
+                              style={styles.inputSmall}
+                              value={newSetWeight}
+                              onChangeText={(t) =>
+                                setWeightInteger(setNewSetWeight, t)
+                              }
+                              placeholder="Weight"
+                              keyboardType="numeric"
+                            />
+                            <TouchableOpacity
+                              onPress={() => handleAddSet(pe.id, pe.sets)}
+                            >
+                              <Text style={styles.addSetBtnText}>Save</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => setAddingSetFor(null)}
+                              style={styles.cancelBtn}
+                            >
+                              <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setAddingSetFor(pe.id)
+                              const last = pe.sets[pe.sets.length - 1]
+                              if (last) {
+                                setNewSetReps(String(last.reps))
+                                setNewSetWeight(formatWeight(last.weight))
+                              }
+                            }}
+                          >
+                            <Text style={styles.addSetLink}>+ Add set</Text>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
-                          style={styles.notesDoneBtn}
-                          onPress={async () => {
-                            const note = getNotesFor(pe.id).nextTimeNote
-                            try {
-                              await apiRequest(
-                                `/performed-exercises/${pe.id}/note_for_next_time/`,
-                                {
-                                  method: 'POST',
-                                  body: { note: note ?? '' },
-                                  token,
-                                }
-                              )
-                              setExpandedNotesFor(null)
-                              fetchWorkout()
-                            } catch (e) {
-                              Alert.alert(
-                                'Could not save note',
-                                (e as Error)?.message ?? 'Please try again.'
-                              )
-                            }
-                          }}
+                          onPress={() => setExpandedNotesFor(pe.id)}
                         >
-                          <Text style={styles.notesDoneText}>Done</Text>
+                          <Text style={styles.notesLink}>Notes</Text>
                         </TouchableOpacity>
                       </View>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )
-          })
-        )}
 
-        <View style={styles.addExerciseRow}>
-          <TextInput
-            style={styles.addExerciseInput}
-            value={newExerciseName}
-            onChangeText={setNewExerciseName}
-            placeholder="Add exercise (e.g. Bench Press)"
-            placeholderTextColor="#a8a29e"
-          />
-          <TouchableOpacity
-            onPress={handleAddExercise}
-            disabled={addingExercise || !newExerciseName.trim()}
-            style={[
-              styles.addExerciseBtn,
-              (!newExerciseName.trim() || addingExercise) &&
-                styles.addExerciseBtnDisabled,
-            ]}
-          >
-            <Text style={styles.addExerciseBtnText}>Add</Text>
-          </TouchableOpacity>
-        </View>
+                      {expandedNotesFor === pe.id && (
+                        <View style={styles.notesOverlay}>
+                          <View style={styles.notesPanel}>
+                            {pe.note_for_next_time ? (
+                              <View style={styles.notesFromLastTime}>
+                                <Text style={styles.notesFromLastTimeLabel}>
+                                  Note from last time
+                                </Text>
+                                <Text style={styles.notesFromLastTimeText}>
+                                  {pe.note_for_next_time}
+                                </Text>
+                              </View>
+                            ) : null}
+                            <View style={styles.notesSection}>
+                              <Text style={styles.notesLabel}>
+                                Notes{' '}
+                                <Text style={styles.notesLabelHint}>
+                                  (this will show the next time you do this
+                                  exercise)
+                                </Text>
+                              </Text>
+                              <TextInput
+                                style={styles.notesInput}
+                                placeholder="e.g. Increase weight to 5 lbs"
+                                placeholderTextColor="#a8a29e"
+                                multiline
+                                value={getNotesFor(pe.id).nextTimeNote}
+                                onChangeText={(text) =>
+                                  setNotesFor(pe.id, (prev) => ({
+                                    ...prev,
+                                    nextTimeNote: text,
+                                  }))
+                                }
+                              />
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.notesDoneBtn}
+                            onPress={async () => {
+                              const note = (getNotesFor(pe.id).nextTimeNote ?? '').trim()
+                              setExpandedNotesFor(null)
+                              if (note.length === 0) return
+                              try {
+                                await apiRequest(
+                                  `/performed-exercises/${pe.id}/note_for_next_time/`,
+                                  {
+                                    method: 'POST',
+                                    body: { note },
+                                    token,
+                                  },
+                                )
+                                fetchWorkout()
+                              } catch (e) {
+                                Alert.alert(
+                                  'Could not save note',
+                                  (e as Error)?.message ?? 'Please try again.',
+                                )
+                              }
+                            }}
+                          >
+                            <Text style={styles.notesDoneText}>Done</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )
+              })
+            )}
+
+            <View style={styles.addExerciseRow}>
+              <TextInput
+                style={styles.addExerciseInput}
+                value={newExerciseName}
+                onChangeText={setNewExerciseName}
+                placeholder="Add exercise (e.g. Bench Press)"
+                placeholderTextColor="#a8a29e"
+              />
+              <TouchableOpacity
+                onPress={handleAddExercise}
+                disabled={addingExercise || !newExerciseName.trim()}
+                style={[
+                  styles.addExerciseBtn,
+                  (!newExerciseName.trim() || addingExercise) &&
+                    styles.addExerciseBtnDisabled,
+                ]}
+              >
+                <Text style={styles.addExerciseBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
       </ScrollView>
     </View>
   )
@@ -819,7 +914,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -16,
     marginTop: -16,
     marginBottom: 12,
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    paddingRight: 6,
     paddingVertical: 10,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
@@ -1012,10 +1108,11 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   notesDoneBtn: {
-    alignSelf: 'flex-end',
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginTop: 8,
   },
   notesDoneText: {
     fontSize: 15,
