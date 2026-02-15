@@ -177,12 +177,10 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
       const dateISO = createDate.toISOString().slice(0, 10)
       const body: {
         date: string
-        name: string
         notes: string
         template_session_id?: number
       } = {
         date: `${dateISO}T12:00:00.000Z`,
-        name: '',
         notes: createNotes.trim() || '',
       }
       if (useSessionTemplate && selectedSessionId != null) {

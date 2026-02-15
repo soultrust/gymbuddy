@@ -503,7 +503,7 @@ export default function WorkoutDetailScreen({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.deleteBtn}
           >
-            <Ionicons name="trash-outline" size={22} color="#78716c" />
+            <Ionicons name="close-outline" size={32} color="#000" />
           </TouchableOpacity>
         )}
       </View>
@@ -539,7 +539,7 @@ export default function WorkoutDetailScreen({
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardBodyWrapper}>
-                      {pe.sets.map((s) =>
+                      {pe.sets.map((s, index) =>
                         editingSetId === s.id ? (
                           <TouchableWithoutFeedback
                             key={s.id}
@@ -570,7 +570,7 @@ export default function WorkoutDetailScreen({
                                   />
                                 </TouchableOpacity>
                                 <Text style={styles.setLabel}>
-                                  Set {s.order}
+                                  Set {index + 1}
                                 </Text>
                               </View>
                               <View style={styles.stepper}>
@@ -632,7 +632,9 @@ export default function WorkoutDetailScreen({
                         ) : (
                           <View key={s.id} style={styles.setRow}>
                             <View style={styles.setLabelRow}>
-                              <Text style={styles.setLabel}>Set {s.order}</Text>
+                              <Text style={styles.setLabel}>
+                                Set {index + 1}
+                              </Text>
                             </View>
                             <TouchableOpacity
                               style={styles.setValueTouchable}
@@ -833,7 +835,7 @@ export default function WorkoutDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#c9a882' },
+  container: { flex: 1, backgroundColor: '#fff4e6' }, // #c9a882
   centered: {
     flex: 1,
     justifyContent: 'center',
@@ -843,11 +845,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 60,
+    marginTop: 48,
+    paddingTop: 16,
     paddingBottom: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: '#fff4e6',
     borderBottomWidth: 1,
     borderBottomColor: '#e7e5e4',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
   },
   backBtn: {
     color: '#d97706',
@@ -888,7 +895,7 @@ const styles = StyleSheet.create({
     color: '#1c1917',
   },
   content: { flex: 1 },
-  contentInner: { padding: 24, paddingBottom: 32 },
+  contentInner: { padding: 24, paddingBottom: 32, backgroundColor: '#c9a882' },
   empty: {
     textAlign: 'center',
     color: '#78716c',

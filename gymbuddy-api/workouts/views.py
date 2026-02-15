@@ -71,6 +71,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = dict(request.data)
         template_session_id = data.pop("template_session_id", None)
+        data.pop("name", None)  # do not save session name to database
         if template_session_id is not None:
             try:
                 template_session_id = int(template_session_id)
@@ -197,3 +198,22 @@ class SetEntryViewSet(
 
     def get_queryset(self):
         return self.queryset.filter(performed_exercise__workout__user=self.request.user)
+
+    def perform_destroy(self, instance):
+        performed_exercise_id = instance.performed_exercise_id
+        instance.delete()
+        # Renumber remaining sets to 1, 2, 3, ... (two-phase to avoid unique constraint)
+        remaining = list(
+            SetEntry.objects.filter(performed_exercise_id=performed_exercise_id).order_by("id")
+        )
+        if not remaining:
+            return
+        # Phase 1: move all orders to a high offset so 1,2,3,... are free
+        offset = 1000
+        for set_entry in remaining:
+            set_entry.order = offset + set_entry.order
+            set_entry.save(update_fields=["order"])
+        # Phase 2: assign 1, 2, 3, ...
+        for order, set_entry in enumerate(remaining, start=1):
+            set_entry.order = order
+            set_entry.save(update_fields=["order"])
