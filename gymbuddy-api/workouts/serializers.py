@@ -1,6 +1,14 @@
 # workouts/serializers.py
 from rest_framework import serializers
-from .models import WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
+from .models import Program, WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
+
+
+class ProgramSerializer(serializers.ModelSerializer):
+    workout_sessions = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Program
+        fields = ["id", "name", "description", "created_at", "workout_sessions"]
 
 
 class ExerciseSerializer(serializers.ModelSerializer):
@@ -42,10 +50,19 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
     exercises = PerformedExerciseSerializer(many=True, read_only=True)
     date = serializers.DateTimeField(required=False)
     date_display = serializers.SerializerMethodField()
+    program = serializers.PrimaryKeyRelatedField(
+        allow_null=True, required=False, queryset=Program.objects.none()
+    )
 
     class Meta:
         model = WorkoutSession
-        fields = ["id", "date", "date_display", "name", "notes", "exercises"]
+        fields = ["id", "date", "date_display", "name", "notes", "exercises", "program"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request and request.user:
+            self.fields["program"].queryset = Program.objects.filter(user=request.user)
 
     def get_date_display(self, obj):
         if not obj or not obj.date:

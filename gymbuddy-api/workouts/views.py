@@ -13,8 +13,9 @@ from rest_framework.mixins import (
     UpdateModelMixin,
     DestroyModelMixin,
 )
-from .models import WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
+from .models import Program, WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
 from .serializers import (
+    ProgramSerializer,
     WorkoutSessionSerializer,
     PerformedExerciseSerializer,
     SetEntrySerializer,
@@ -38,6 +39,19 @@ class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ExerciseSerializer
     queryset = Exercise.objects.all()
     permission_classes = [AllowAny]
+
+
+class ProgramViewSet(viewsets.ModelViewSet):
+    """CRUD for training programs (each can have many workout sessions)."""
+
+    serializer_class = ProgramSerializer
+    queryset = Program.objects.all()
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class WorkoutSessionViewSet(viewsets.ModelViewSet):

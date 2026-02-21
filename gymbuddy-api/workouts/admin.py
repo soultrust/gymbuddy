@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Exercise, WorkoutSession, PerformedExercise, SetEntry, UserExerciseNote
+from .models import Program, Exercise, WorkoutSession, PerformedExercise, SetEntry, UserExerciseNote
 
 
 @admin.register(Exercise)
@@ -20,9 +20,16 @@ class PerformedExerciseInline(admin.TabularInline):
     extra = 0
 
 
+@admin.register(Program)
+class ProgramAdmin(admin.ModelAdmin):
+    list_display = ["name", "user", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["name", "user__email"]
+
+
 @admin.register(WorkoutSession)
 class WorkoutSessionAdmin(admin.ModelAdmin):
-    list_display = ["user", "date", "name"]
+    list_display = ["user", "program", "date", "name"]
     list_filter = ["date"]
     search_fields = ["user__username", "name"]
     inlines = [PerformedExerciseInline]

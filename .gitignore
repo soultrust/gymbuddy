@@ -5,3 +5,4 @@ db.sqlite3
 gymbuddy-api/firebase-service-account.json
 gymbuddy-api/*-firebase-adminsdk-*.json
 gymbuddy-api/staticfiles/
+__pycache__/

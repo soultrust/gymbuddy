@@ -13,12 +13,38 @@ class Exercise(models.Model):
         return self.name
 
 
+class Program(models.Model):
+    """A training program that groups multiple workout sessions (e.g. Push/Pull/Legs, 5/3/1)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="programs",
+    )
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.name
+
+
 class WorkoutSession(models.Model):
     """One workout done by a user on a given date."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        related_name="workout_sessions",
+    )
+    program = models.ForeignKey(
+        Program,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="workout_sessions",
     )
     date = models.DateTimeField(auto_now_add=True)  # when the workout was logged

@@ -4,6 +4,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r"exercises", views.ExerciseViewSet, basename="exercise")
+router.register(r"programs", views.ProgramViewSet, basename="program")
 router.register(r"workouts", views.WorkoutSessionViewSet, basename="workout")
 router.register(
     r"performed-exercises",
