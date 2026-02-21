@@ -32,8 +32,8 @@ class Program(models.Model):
         return self.name
 
 
-class WorkoutSession(models.Model):
-    """One workout done by a user on a given date."""
+class Session(models.Model):
+    """One session done by a user on a given date."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -56,10 +56,10 @@ class WorkoutSession(models.Model):
 
 
 class PerformedExercise(models.Model):
-    """An exercise performed in a specific workout session."""
+    """An exercise performed in a specific session."""
 
-    workout = models.ForeignKey(
-        WorkoutSession,
+    session = models.ForeignKey(
+        Session,
         on_delete=models.CASCADE,
         related_name="exercises",
     )
@@ -73,7 +73,7 @@ class PerformedExercise(models.Model):
 
     class Meta:
         ordering = ["order"]
-        unique_together = ("workout", "order")
+        unique_together = ("session", "order")
 
 
 class SetEntry(models.Model):

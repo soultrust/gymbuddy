@@ -13,10 +13,10 @@ from rest_framework.mixins import (
     UpdateModelMixin,
     DestroyModelMixin,
 )
-from .models import Program, WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
+from .models import Program, Session, PerformedExercise, SetEntry, Exercise, UserExerciseNote
 from .serializers import (
     ProgramSerializer,
-    WorkoutSessionSerializer,
+    SessionSerializer,
     PerformedExerciseSerializer,
     SetEntrySerializer,
     ExerciseSerializer,
@@ -55,20 +55,20 @@ class ProgramViewSet(viewsets.ModelViewSet):
 
 
 class WorkoutSessionViewSet(viewsets.ModelViewSet):
-    serializer_class = WorkoutSessionSerializer
-    queryset = WorkoutSession.objects.all()
+    serializer_class = SessionSerializer
+    queryset = Session.objects.all()
 
     def get_queryset(self):
         return self.queryset.filter(user=self.request.user)
 
-    def _copy_session_as_template(self, new_workout, template_workout_id):
-        """Copy exercises and sets from template_workout_id (must be user's) into new_workout."""
-        template = self.get_queryset().filter(id=template_workout_id).first()
+    def _copy_session_as_template(self, new_session, template_session_id):
+        """Copy exercises and sets from template_session_id (must be user's) into new_session."""
+        template = self.get_queryset().filter(id=template_session_id).first()
         if not template:
             return
         for pe in template.exercises.all().order_by("order"):
             new_pe = PerformedExercise.objects.create(
-                workout=new_workout,
+                session=new_session,
                 exercise=pe.exercise,
                 user_preferred_name=pe.user_preferred_name or "",
                 order=pe.order,
@@ -94,12 +94,12 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        new_workout = serializer.instance
+        new_session = serializer.instance
         if template_session_id is not None:
-            self._copy_session_as_template(new_workout, template_session_id)
+            self._copy_session_as_template(new_session, template_session_id)
             # Re-fetch so response includes the copied exercises
-            new_workout = self.get_queryset().get(pk=new_workout.pk)
-            serializer = self.get_serializer(new_workout)
+            new_session = self.get_queryset().get(pk=new_session.pk)
+            serializer = self.get_serializer(new_session)
         headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
@@ -123,11 +123,11 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def previous_exercises(self, request, pk=None):
-        """GET /api/v1/workouts/{id}/previous_exercises/ - prior workout's exercises (for 'last time' ref)."""
-        workout = self.get_object()
+        """GET /api/v1/workouts/{id}/previous_exercises/ - prior session's exercises (for 'last time' ref)."""
+        session = self.get_object()
         previous = (
             self.get_queryset()
-            .filter(date__lt=workout.date)
+            .filter(date__lt=session.date)
             .order_by("-date")
             .first()
         )
@@ -137,7 +137,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         serializer = TemplateExerciseSerializer(exercises, many=True)
         return Response(serializer.data)
 
-    def _add_exercise(self, workout, request):
+    def _add_exercise(self, session, request):
         data = dict(request.data)
         exercise_name = data.pop("exercise_name", None)
         if exercise_name:
@@ -153,29 +153,29 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             data["exercise"] = exercise.id
         serializer = PerformedExerciseSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(workout=workout)
+            serializer.save(session=session)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def _list_exercises(self, workout):
-        exercises = workout.exercises.all()
+    def _list_exercises(self, session):
+        exercises = session.exercises.all()
         serializer = PerformedExerciseSerializer(exercises, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=["get", "post"])
     def exercises(self, request, pk=None):
         """GET /api/workouts/{id}/exercises/ - list | POST - add one exercise"""
-        workout = self.get_object()
+        session = self.get_object()
         if request.method == "POST":
-            return self._add_exercise(workout, request)
-        return self._list_exercises(workout)
+            return self._add_exercise(session, request)
+        return self._list_exercises(session)
 
 
 class PerformedExerciseViewSet(viewsets.ModelViewSet):
     serializer_class = PerformedExerciseSerializer
 
     def get_queryset(self):
-        return PerformedExercise.objects.filter(workout__user=self.request.user)
+        return PerformedExercise.objects.filter(session__user=self.request.user)
 
     def _add_set(self, exercise, request):
         serializer = SetEntrySerializer(data=request.data)
@@ -211,7 +211,7 @@ class SetEntryViewSet(
     queryset = SetEntry.objects.all()
 
     def get_queryset(self):
-        return self.queryset.filter(performed_exercise__workout__user=self.request.user)
+        return self.queryset.filter(performed_exercise__session__user=self.request.user)
 
     def perform_destroy(self, instance):
         performed_exercise_id = instance.performed_exercise_id

@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
-from .models import Exercise, PerformedExercise, SetEntry, WorkoutSession
+from .models import Exercise, PerformedExercise, SetEntry, Session
 
 User = get_user_model()
 
@@ -44,21 +44,21 @@ class WorkoutSessionAPITests(APITestCase):
         self.assertEqual(r.data["exercises"], [])
 
     def test_user_only_sees_own_workouts(self):
-        WorkoutSession.objects.create(user=self.user, name="Mine")
-        WorkoutSession.objects.create(user=self.other_user, name="Theirs")
+        Session.objects.create(user=self.user, name="Mine")
+        Session.objects.create(user=self.other_user, name="Theirs")
         r = self.client.get("/api/v1/workouts/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(len(r.data), 1)
         self.assertEqual(r.data[0]["name"], "Mine")
 
     def test_retrieve_workout(self):
-        w = WorkoutSession.objects.create(user=self.user, name="Push")
+        w = Session.objects.create(user=self.user, name="Push")
         r = self.client.get(f"/api/v1/workouts/{w.id}/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(r.data["name"], "Push")
 
     def test_cannot_retrieve_other_users_workout(self):
-        w = WorkoutSession.objects.create(
+        w = Session.objects.create(
             user=self.other_user, name="Theirs"
         )
         r = self.client.get(f"/api/v1/workouts/{w.id}/")
@@ -73,7 +73,7 @@ class WorkoutExercisesAPITests(APITestCase):
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
-        self.workout = WorkoutSession.objects.create(user=self.user, name="Push")
+        self.workout = Session.objects.create(user=self.user, name="Push")
         self.bench = Exercise.objects.create(name="Bench Press", description="")
 
     def test_add_exercise_by_id(self):
@@ -98,7 +98,7 @@ class WorkoutExercisesAPITests(APITestCase):
 
     def test_list_exercises(self):
         PerformedExercise.objects.create(
-            workout=self.workout, exercise=self.bench, order=1
+            session=self.workout, exercise=self.bench, order=1
         )
         r = self.client.get(f"/api/v1/workouts/{self.workout.id}/exercises/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -114,10 +114,10 @@ class PerformedExerciseSetsAPITests(APITestCase):
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
-        self.workout = WorkoutSession.objects.create(user=self.user, name="Push")
+        self.workout = Session.objects.create(user=self.user, name="Push")
         self.bench = Exercise.objects.create(name="Bench Press", description="")
         self.performed = PerformedExercise.objects.create(
-            workout=self.workout, exercise=self.bench, order=1
+            session=self.workout, exercise=self.bench, order=1
         )
 
     def test_add_set(self):
@@ -148,10 +148,10 @@ class SetEntryAPITests(APITestCase):
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
 
-        self.workout = WorkoutSession.objects.create(user=self.user, name="Push")
+        self.workout = Session.objects.create(user=self.user, name="Push")
         self.bench = Exercise.objects.create(name="Bench Press", description="")
         self.performed = PerformedExercise.objects.create(
-            workout=self.workout, exercise=self.bench, order=1
+            session=self.workout, exercise=self.bench, order=1
         )
         self.set_entry = SetEntry.objects.create(
             performed_exercise=self.performed, order=1, reps=10, weight=Decimal("135")
@@ -187,9 +187,9 @@ class TemplateAndPreviousExercisesAPITests(APITestCase):
         self.assertEqual(r.data, [])
 
     def test_template_returns_last_workout_exercises(self):
-        w = WorkoutSession.objects.create(user=self.user, name="Push")
+        w = Session.objects.create(user=self.user, name="Push")
         ex = Exercise.objects.create(name="Bench Press", description="")
-        pe = PerformedExercise.objects.create(workout=w, exercise=ex, order=1)
+        pe = PerformedExercise.objects.create(session=w, exercise=ex, order=1)
         SetEntry.objects.create(
             performed_exercise=pe, order=1, reps=10, weight=Decimal("135")
         )
@@ -201,10 +201,10 @@ class TemplateAndPreviousExercisesAPITests(APITestCase):
 
     def test_previous_exercises_returns_prior_workout(self):
         # Create w1 first so its date is earlier than w2's
-        w1 = WorkoutSession.objects.create(user=self.user, name="Earlier")
-        w2 = WorkoutSession.objects.create(user=self.user, name="Later")
+        w1 = Session.objects.create(user=self.user, name="Earlier")
+        w2 = Session.objects.create(user=self.user, name="Later")
         ex = Exercise.objects.create(name="Squat", description="")
-        PerformedExercise.objects.create(workout=w1, exercise=ex, order=1)
+        PerformedExercise.objects.create(session=w1, exercise=ex, order=1)
         r = self.client.get(f"/api/v1/workouts/{w2.id}/previous_exercises/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(len(r.data), 1)

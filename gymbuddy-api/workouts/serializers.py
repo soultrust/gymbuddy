@@ -1,6 +1,6 @@
 # workouts/serializers.py
 from rest_framework import serializers
-from .models import Program, WorkoutSession, PerformedExercise, SetEntry, Exercise, UserExerciseNote
+from .models import Program, Session, PerformedExercise, SetEntry, Exercise, UserExerciseNote
 
 
 class ProgramSerializer(serializers.ModelSerializer):
@@ -46,7 +46,7 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
         return data
 
 
-class WorkoutSessionSerializer(serializers.ModelSerializer):
+class SessionSerializer(serializers.ModelSerializer):
     exercises = PerformedExerciseSerializer(many=True, read_only=True)
     date = serializers.DateTimeField(required=False)
     date_display = serializers.SerializerMethodField()
@@ -55,7 +55,7 @@ class WorkoutSessionSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = WorkoutSession
+        model = Session
         fields = ["id", "date", "date_display", "name", "notes", "exercises", "program"]
 
     def __init__(self, *args, **kwargs):
