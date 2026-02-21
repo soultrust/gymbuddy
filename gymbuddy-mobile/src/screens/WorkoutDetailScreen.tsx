@@ -94,6 +94,9 @@ export default function WorkoutDetailScreen({
   const [previousExercises, setPreviousExercises] = useState<
     TemplateExercise[]
   >([])
+  const [userExercises, setUserExercises] = useState<
+    { id: number; name: string }[]
+  >([])
   const [loading, setLoading] = useState(true)
   const [newExerciseName, setNewExerciseName] = useState('')
   const [addingExercise, setAddingExercise] = useState(false)
@@ -150,11 +153,26 @@ export default function WorkoutDetailScreen({
     }
   }, [token, workoutId])
 
+  const fetchUserExercises = useCallback(async () => {
+    if (!token) return
+    try {
+      const data = await apiRequest<{ id: number; name: string }[]>(
+        `/workouts/user_exercises/`,
+        { token },
+      )
+      setUserExercises(Array.isArray(data) ? data : [])
+    } catch {
+      setUserExercises([])
+    }
+  }, [token])
+
   useEffect(() => {
-    Promise.all([fetchWorkout(), fetchPrevious()]).finally(() =>
-      setLoading(false),
-    )
-  }, [fetchWorkout, fetchPrevious])
+    Promise.all([
+      fetchWorkout(),
+      fetchPrevious(),
+      fetchUserExercises(),
+    ]).finally(() => setLoading(false))
+  }, [fetchWorkout, fetchPrevious, fetchUserExercises])
 
   useEffect(() => {
     if (editingSetId !== null) {
@@ -390,6 +408,32 @@ export default function WorkoutDetailScreen({
         },
       })
       setNewExerciseName('')
+      await fetchWorkout()
+    } catch {
+      // ignore
+    } finally {
+      setAddingExercise(false)
+    }
+  }
+
+  const handleAddPastExercise = async (exerciseId: number) => {
+    if (!token || !workout) return
+    setAddingExercise(true)
+    try {
+      const exercises = workout.exercises ?? []
+      const nextOrder =
+        exercises.length > 0
+          ? Math.max(...exercises.map((e) => e.order)) + 1
+          : 1
+      await apiRequest(`/workouts/${workoutId}/exercises/`, {
+        method: 'POST',
+        token,
+        body: {
+          exercise: exerciseId,
+          order: nextOrder,
+          user_preferred_name: '',
+        },
+      })
       await fetchWorkout()
     } catch {
       // ignore
@@ -807,6 +851,29 @@ export default function WorkoutDetailScreen({
               })
             )}
 
+            {userExercises.length > 0 && (
+              <View style={styles.addPastExerciseSection}>
+                <Text style={styles.addPastExerciseLabel}>Add past exercise</Text>
+                <ScrollView
+                  style={styles.addPastExerciseList}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {userExercises.map((ex) => (
+                    <TouchableOpacity
+                      key={ex.id}
+                      onPress={() => handleAddPastExercise(ex.id)}
+                      disabled={addingExercise}
+                      style={styles.addPastExerciseItem}
+                    >
+                      <Text style={styles.addPastExerciseItemText}>
+                        {ex.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
             <View style={styles.addExerciseRow}>
               <TextInput
                 style={styles.addExerciseInput}
@@ -1130,6 +1197,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#d97706',
+  },
+  addPastExerciseSection: {
+    marginTop: 24,
+  },
+  addPastExerciseLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#78716c',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  addPastExerciseList: {
+    maxHeight: 100,
+  },
+  addPastExerciseItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+    backgroundColor: '#ffedd2',
+    borderRadius: 8,
+  },
+  addPastExerciseItemText: {
+    fontSize: 14,
+    color: '#44403c',
+    fontWeight: '500',
   },
   addExerciseRow: {
     flexDirection: 'row',

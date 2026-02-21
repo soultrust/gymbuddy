@@ -139,6 +139,7 @@ export default function WorkoutDetail({
   const { token } = useAuth();
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [previousExercises, setPreviousExercises] = useState<TemplateExercise[]>([]);
+  const [userExercises, setUserExercises] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [newExerciseName, setNewExerciseName] = useState("");
   const [addingExercise, setAddingExercise] = useState(false);
@@ -166,9 +167,24 @@ export default function WorkoutDetail({
     }
   }, [token, workoutId]);
 
+  const fetchUserExercises = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await apiRequest<{ id: number; name: string }[]>(
+        `/workouts/user_exercises/`,
+        { token }
+      );
+      setUserExercises(Array.isArray(data) ? data : []);
+    } catch {
+      setUserExercises([]);
+    }
+  }, [token]);
+
   useEffect(() => {
-    Promise.all([fetchWorkout(), fetchPrevious()]).finally(() => setLoading(false));
-  }, [fetchWorkout, fetchPrevious]);
+    Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises()]).finally(() =>
+      setLoading(false)
+    );
+  }, [fetchWorkout, fetchPrevious, fetchUserExercises]);
 
   const getLastSets = (exerciseId: number) =>
     previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? [];
@@ -289,6 +305,29 @@ export default function WorkoutDetail({
         },
       });
       setNewExerciseName("");
+      await fetchWorkout();
+    } catch {
+      // ignore
+    } finally {
+      setAddingExercise(false);
+    }
+  };
+
+  const handleAddPastExercise = async (exerciseId: number) => {
+    if (!token || !workout) return;
+    setAddingExercise(true);
+    try {
+      const exercises = workout.exercises ?? [];
+      const nextOrder = exercises.length > 0 ? Math.max(...exercises.map((e) => e.order)) + 1 : 1;
+      await apiRequest(`/workouts/${workoutId}/exercises/`, {
+        method: "POST",
+        token,
+        body: {
+          exercise: exerciseId,
+          order: nextOrder,
+          user_preferred_name: "",
+        },
+      });
       await fetchWorkout();
     } catch {
       // ignore
@@ -448,7 +487,35 @@ export default function WorkoutDetail({
           </div>
         )}
 
-        <form onSubmit={handleAddExercise} className="mt-8 flex gap-2">
+        {userExercises.length > 0 && (
+          <div className="mt-8">
+            <label
+              htmlFor="add-past-exercise"
+              className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2"
+            >
+              Add past exercise
+            </label>
+            <select
+              id="add-past-exercise"
+              className="w-full max-w-xs px-4 py-2 rounded-lg border border-stone-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none bg-white"
+              value=""
+              onChange={(e) => {
+                const id = parseInt(e.target.value, 10);
+                if (!isNaN(id)) handleAddPastExercise(id);
+                e.target.value = "";
+              }}
+              disabled={addingExercise}
+            >
+              <option value="">Select exercise…</option>
+              {userExercises.map((ex) => (
+                <option key={ex.id} value={ex.id}>
+                  {ex.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <form onSubmit={handleAddExercise} className="mt-6 flex gap-2">
           <input
             type="text"
             value={newExerciseName}

@@ -112,6 +112,19 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         serializer.save(**kwargs)
 
     @action(detail=False, methods=["get"])
+    def user_exercises(self, request):
+        """GET /api/v1/workouts/user_exercises/ - distinct exercises the user has ever performed."""
+        exercises = (
+            Exercise.objects.filter(
+                performed_instances__session__user=request.user
+            )
+            .distinct()
+            .order_by("name")
+        )
+        serializer = ExerciseSerializer(exercises, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
     def template(self, request):
         """GET /api/v1/workouts/template/ - last workout's exercises with sets (for next workout)."""
         last = self.get_queryset().order_by("-date").first()
