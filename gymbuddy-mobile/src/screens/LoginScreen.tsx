@@ -10,7 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-
+import { sendPasswordResetEmail } from 'firebase/auth'
+import { auth } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginScreen() {
@@ -19,6 +20,22 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Enter your email to reset password')
+      return
+    }
+    setLoading(true)
+    try {
+      await sendPasswordResetEmail(auth, email.trim())
+      Alert.alert('Check your email', 'A password reset link was sent.')
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to send reset email')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!email.trim() || !password) {
@@ -66,6 +83,15 @@ export default function LoginScreen() {
         onChangeText={setPassword}
         secureTextEntry
       />
+      {!isSignUp && (
+        <TouchableOpacity
+          onPress={handleForgotPassword}
+          disabled={loading}
+          style={styles.forgotLink}
+        >
+          <Text style={styles.forgotLinkText}>Forgot password?</Text>
+        </TouchableOpacity>
+      )}
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSubmit}
@@ -152,5 +178,13 @@ const styles = StyleSheet.create({
     color: '#78716c',
     fontSize: 14,
     textAlign: 'center',
+  },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
+  forgotLinkText: {
+    color: '#92400e',
+    fontSize: 14,
   },
 })

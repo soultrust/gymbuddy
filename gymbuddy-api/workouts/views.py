@@ -27,10 +27,18 @@ from .serializers import (
 def debug_db(request):
     """Temporary: report which DB the running process is using. Remove after testing."""
     db = settings.DATABASES["default"]
-    return JsonResponse({
+    info = {
         "engine": db["ENGINE"],
+        "name": db.get("NAME", "N/A"),  # database name (gymbuddy, postgres, or sqlite path)
         "has_database_url": bool(os.environ.get("DATABASE_URL")),
-    })
+    }
+    try:
+        from accounts.models import User
+        info["user_count"] = User.objects.count()
+        info["staff_count"] = User.objects.filter(is_staff=True).count()
+    except Exception as e:
+        info["user_count_error"] = str(e)
+    return JsonResponse(info)
 
 
 class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):

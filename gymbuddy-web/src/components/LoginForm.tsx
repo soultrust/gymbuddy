@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginForm() {
@@ -8,6 +10,25 @@ export default function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Enter your email to reset password");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setResetSent(false);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setResetSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +83,18 @@ export default function LoginForm() {
           placeholder="Password"
           autoComplete="current-password"
         />
+        {!isSignUp && (
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={loading}
+            className="mt-1 text-sm text-amber-600 hover:text-amber-700"
+          >
+            Forgot password?
+          </button>
+        )}
       </div>
+      {resetSent && <p className="text-green-600 text-sm">Check your email for the reset link.</p>}
       {error && <p className="text-red-600 text-sm -mt-2">{error}</p>}
       <button
         type="submit"
