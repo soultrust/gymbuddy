@@ -716,6 +716,7 @@ export default function WorkoutDetailScreen({
                             <TouchableOpacity
                               style={styles.setValueTouchable}
                               onPress={() => {
+                                setAddingSetFor(null)
                                 setEditingSetId(s.id)
                                 setEditingSetReps(String(s.reps))
                                 setEditingSetWeight(formatWeight(s.weight))
@@ -736,66 +737,75 @@ export default function WorkoutDetailScreen({
                           </View>
                         ),
                       )}
-                      <View style={styles.addSetNotesRow}>
-                        {addingSetFor === pe.id ? (
-                          <View style={styles.addSetRow}>
+                      <View style={styles.addSetNotesColumn}>
+                        {addingSetFor === pe.id && (
+                          <View style={[styles.addSetRow, styles.addSetRowEditing]}>
                             <TouchableOpacity
                               onPress={() => setAddingSetFor(null)}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              style={{ padding: 4 }}
+                              style={styles.addSetCancelBtn}
                             >
                               <Ionicons
                                 name="close-outline"
                                 size={24}
-                                color="#78716c"
+                                color="#1c1917"
                               />
                             </TouchableOpacity>
-                            <View style={styles.stepper}>
-                              <TouchableOpacity
-                                style={styles.stepperBtn}
-                                onPress={() => {
-                                  const v = Math.max(
-                                    0,
-                                    parseInt(newSetReps, 10) - 1,
-                                  )
-                                  setNewSetReps(String(isNaN(v) ? 0 : v))
-                                }}
-                              >
-                                <StepperArrowIcon
-                                  direction="left"
-                                  color="#44403c"
-                                />
-                              </TouchableOpacity>
-                              <Text style={styles.stepperValue}>
-                                {newSetReps || '0'}
-                              </Text>
-                              <TouchableOpacity
-                                style={styles.stepperBtn}
-                                onPress={() => {
-                                  const v = (parseInt(newSetReps, 10) || 0) + 1
-                                  setNewSetReps(String(v))
-                                }}
-                              >
-                                <StepperArrowIcon
-                                  direction="right"
-                                  color="#44403c"
-                                />
-                              </TouchableOpacity>
+                            <Text style={styles.addSetLabel}>
+                              Set {pe.sets.length + 1}
+                            </Text>
+                            <View style={styles.addSetStepperCenter}>
+                              <View style={styles.stepper}>
+                                <TouchableOpacity
+                                  style={styles.stepperBtn}
+                                  onPress={() => {
+                                    const v = Math.max(
+                                      0,
+                                      parseInt(newSetReps, 10) - 1,
+                                    )
+                                    setNewSetReps(String(isNaN(v) ? 0 : v))
+                                  }}
+                                >
+                                  <StepperArrowIcon
+                                    direction="left"
+                                    color="#1c1917"
+                                  />
+                                </TouchableOpacity>
+                                <Text style={[styles.stepperValue, { color: '#1c1917' }]}>
+                                  {newSetReps || '0'}
+                                </Text>
+                                <TouchableOpacity
+                                  style={styles.stepperBtn}
+                                  onPress={() => {
+                                    const v = (parseInt(newSetReps, 10) || 0) + 1
+                                    setNewSetReps(String(v))
+                                  }}
+                                >
+                                  <StepperArrowIcon
+                                    direction="right"
+                                    color="#1c1917"
+                                  />
+                                </TouchableOpacity>
+                              </View>
                             </View>
                             <TextInput
-                              style={styles.inputSmall}
+                              style={[styles.inputSmall, styles.addSetInputEditing]}
                               value={newSetWeight}
                               onChangeText={(t) =>
                                 setWeightInteger(setNewSetWeight, t)
                               }
                               onBlur={() => handleAddSet(pe.id, pe.sets)}
                               placeholder="Weight"
+                              placeholderTextColor="#78716c"
                               keyboardType="numeric"
                             />
                           </View>
-                        ) : (
+                        )}
+                        <View style={[styles.addSetNotesRow, addingSetFor === pe.id && styles.addSetNotesRowBelow]}>
                           <TouchableOpacity
                             onPress={() => {
+                              if (addingSetFor === pe.id) return
+                              setEditingSetId(null)
                               setAddingSetFor(pe.id)
                               const last = pe.sets[pe.sets.length - 1]
                               if (last) {
@@ -806,12 +816,12 @@ export default function WorkoutDetailScreen({
                           >
                             <Text style={styles.addSetLink}>+ Add set</Text>
                           </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                          onPress={() => setExpandedNotesFor(pe.id)}
-                        >
-                          <Text style={styles.notesLink}>Notes</Text>
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setExpandedNotesFor(pe.id)}
+                          >
+                            <Text style={styles.notesLink}>Notes</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
 
                       {expandedNotesFor === pe.id && (
@@ -1122,11 +1132,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  addSetNotesColumn: {
+    marginTop: 8,
+  },
   addSetRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
     gap: 8,
+  },
+  addSetRowEditing: {
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginHorizontal: -11,
+  },
+  addSetCancelBtn: {
+    padding: 4,
+  },
+  addSetLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1c1917',
+  },
+  addSetStepperCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addSetInputEditing: {
+    backgroundColor: '#fff4e6',
+  },
+  addSetNotesRowBelow: {
+    marginTop: 8,
   },
   inputSmall: {
     width: 60,
