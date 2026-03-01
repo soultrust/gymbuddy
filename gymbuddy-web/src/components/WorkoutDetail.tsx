@@ -208,12 +208,7 @@ export default function WorkoutDetail({
   const [editingSetReps, setEditingSetReps] = useState("");
   const [editingSetWeight, setEditingSetWeight] = useState("");
 
-  const handleAddSet = async (
-    e: React.FormEvent,
-    performedExerciseId: number,
-    currentSets: SetEntry[]
-  ) => {
-    e.preventDefault();
+  const submitAddSet = async (performedExerciseId: number, currentSets: SetEntry[]) => {
     if (!token || !workout) return;
     const nextOrder = currentSets.length > 0 ? Math.max(...currentSets.map((s) => s.order)) + 1 : 1;
     const reps = parseInt(newSetReps, 10);
@@ -237,6 +232,7 @@ export default function WorkoutDetail({
       // ignore
     }
   };
+
 
   const handleSaveSet = async (set: SetEntry) => {
     if (!token) return;
@@ -462,10 +458,22 @@ export default function WorkoutDetail({
                       />
                     ))}
                     {addingSetFor === pe.id ? (
-                      <form
-                        onSubmit={(e) => handleAddSet(e, pe.id, pe.sets)}
+                      <div
                         className="flex gap-2 items-center mt-2"
+                        onBlur={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            setTimeout(() => submitAddSet(pe.id, pe.sets), 0);
+                          }
+                        }}
                       >
+                        <button
+                          type="button"
+                          onClick={() => setAddingSetFor(null)}
+                          className="text-stone-400 hover:text-stone-600 p-1 -m-1"
+                          aria-label="Cancel"
+                        >
+                          ×
+                        </button>
                         <input
                           type="number"
                           min="1"
@@ -483,20 +491,7 @@ export default function WorkoutDetail({
                           placeholder="Weight (lbs)"
                           className="w-24 px-2 py-1 text-sm rounded border border-stone-300"
                         />
-                        <button
-                          type="submit"
-                          className="text-sm text-amber-600 hover:text-amber-700 font-medium"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAddingSetFor(null)}
-                          className="text-sm text-stone-500"
-                        >
-                          Cancel
-                        </button>
-                      </form>
+                      </div>
                     ) : (
                       <button
                         onClick={() => {
@@ -521,12 +516,12 @@ export default function WorkoutDetail({
         )}
 
         {userExercises.length > 0 && (
-          <div className="mt-8">
+          <div className="mt-8 p-4 rounded-xl border border-stone-200 bg-white shadow-sm">
             <label
               htmlFor="add-past-exercise"
               className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2"
             >
-              Add past exercise
+              Add past exercise <span className="font-normal normal-case tracking-normal text-stone-400">(uses data from last time)</span>
             </label>
             <select
               id="add-past-exercise"
@@ -548,21 +543,33 @@ export default function WorkoutDetail({
             </select>
           </div>
         )}
-        <form onSubmit={handleAddExercise} className="mt-6 flex gap-2">
-          <input
-            type="text"
-            value={newExerciseName}
-            onChange={(e) => setNewExerciseName(e.target.value)}
-            placeholder="Add exercise (e.g. Bench Press)"
-            className="flex-1 px-4 py-2 rounded-lg border border-stone-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
-          />
-          <button
-            type="submit"
-            disabled={addingExercise || !newExerciseName.trim()}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition disabled:opacity-50"
+        <form
+          onSubmit={handleAddExercise}
+          className="mt-6 p-4 rounded-xl border border-stone-200 bg-white shadow-sm flex flex-col gap-2"
+        >
+          <label
+            htmlFor="add-exercise"
+            className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2"
           >
-            Add
-          </button>
+            Add New Exercise
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="add-exercise"
+              type="text"
+              value={newExerciseName}
+              onChange={(e) => setNewExerciseName(e.target.value)}
+              placeholder="e.g. Bench Press"
+              className="flex-1 px-4 py-2 rounded-lg border border-stone-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={addingExercise || !newExerciseName.trim()}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition disabled:opacity-50"
+            >
+              Add
+            </button>
+          </div>
         </form>
       </main>
     </div>

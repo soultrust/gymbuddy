@@ -739,6 +739,17 @@ export default function WorkoutDetailScreen({
                       <View style={styles.addSetNotesRow}>
                         {addingSetFor === pe.id ? (
                           <View style={styles.addSetRow}>
+                            <TouchableOpacity
+                              onPress={() => setAddingSetFor(null)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              style={{ padding: 4 }}
+                            >
+                              <Ionicons
+                                name="close-outline"
+                                size={24}
+                                color="#78716c"
+                              />
+                            </TouchableOpacity>
                             <View style={styles.stepper}>
                               <TouchableOpacity
                                 style={styles.stepperBtn}
@@ -777,20 +788,10 @@ export default function WorkoutDetailScreen({
                               onChangeText={(t) =>
                                 setWeightInteger(setNewSetWeight, t)
                               }
+                              onBlur={() => handleAddSet(pe.id, pe.sets)}
                               placeholder="Weight"
                               keyboardType="numeric"
                             />
-                            <TouchableOpacity
-                              onPress={() => handleAddSet(pe.id, pe.sets)}
-                            >
-                              <Text style={styles.addSetBtnText}>Save</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => setAddingSetFor(null)}
-                              style={styles.cancelBtn}
-                            >
-                              <Text style={styles.cancelBtnText}>Cancel</Text>
-                            </TouchableOpacity>
                           </View>
                         ) : (
                           <TouchableOpacity
@@ -885,8 +886,11 @@ export default function WorkoutDetailScreen({
             )}
 
             {userExercises.length > 0 && (
-              <View style={styles.addPastExerciseSection}>
-                <Text style={styles.addPastExerciseLabel}>Add past exercise</Text>
+              <View style={[styles.addPastExerciseSection, styles.card]}>
+                <Text style={styles.addPastExerciseLabel}>
+                Add past exercise{' '}
+                <Text style={styles.addPastExerciseHint}>(uses data from last time)</Text>
+              </Text>
                 <ScrollView
                   style={styles.addPastExerciseList}
                   nestedScrollEnabled
@@ -907,25 +911,28 @@ export default function WorkoutDetailScreen({
                 </ScrollView>
               </View>
             )}
-            <View style={styles.addExerciseRow}>
-              <TextInput
-                style={styles.addExerciseInput}
-                value={newExerciseName}
-                onChangeText={setNewExerciseName}
-                placeholder="Add exercise (e.g. Bench Press)"
-                placeholderTextColor="#a8a29e"
-              />
-              <TouchableOpacity
-                onPress={handleAddExercise}
-                disabled={addingExercise || !newExerciseName.trim()}
-                style={[
-                  styles.addExerciseBtn,
-                  (!newExerciseName.trim() || addingExercise) &&
-                    styles.addExerciseBtnDisabled,
-                ]}
-              >
-                <Text style={styles.addExerciseBtnText}>Add</Text>
-              </TouchableOpacity>
+            <View style={[styles.addExerciseSection, styles.card]}>
+              <Text style={styles.addPastExerciseLabel}>Add New Exercise</Text>
+              <View style={styles.addExerciseRow}>
+                <TextInput
+                  style={styles.addExerciseInput}
+                  value={newExerciseName}
+                  onChangeText={setNewExerciseName}
+                  placeholder="e.g. Bench Press"
+                  placeholderTextColor="#a8a29e"
+                />
+                <TouchableOpacity
+                  onPress={handleAddExercise}
+                  disabled={addingExercise || !newExerciseName.trim()}
+                  style={[
+                    styles.addExerciseBtn,
+                    (!newExerciseName.trim() || addingExercise) &&
+                      styles.addExerciseBtnDisabled,
+                  ]}
+                >
+                  <Text style={styles.addExerciseBtnText}>Add</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -1006,7 +1013,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff4e6',
     borderRadius: 12,
     borderColor: '#e7e5e4',
-    // padding: 16,
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -1231,6 +1237,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#d97706',
   },
+  card: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e7e5e4',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   addPastExerciseSection: {
     marginTop: 24,
   },
@@ -1241,8 +1259,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
   },
+  addPastExerciseHint: {
+    fontWeight: '400',
+    color: '#a8a29e',
+    textTransform: 'none',
+  },
   addPastExerciseList: {
-    maxHeight: 100,
+    maxHeight: 200,
   },
   addPastExerciseItem: {
     paddingVertical: 8,
@@ -1256,10 +1279,13 @@ const styles = StyleSheet.create({
     color: '#44403c',
     fontWeight: '500',
   },
+  addExerciseSection: {
+    marginTop: 24,
+  },
   addExerciseRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 24,
+    marginTop: 8,
   },
   addExerciseInput: {
     flex: 1,
