@@ -425,15 +425,48 @@ export default function WorkoutDetailScreen({
         exercises.length > 0
           ? Math.max(...exercises.map((e) => e.order)) + 1
           : 1
-      await apiRequest(`/workouts/${workoutId}/exercises/`, {
-        method: 'POST',
-        token,
-        body: {
-          exercise: exerciseId,
-          order: nextOrder,
-          user_preferred_name: '',
+
+      let userPreferredName = ''
+      let lastSets: SetEntry[] = []
+      try {
+        const last = await apiRequest<TemplateExercise>(
+          `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,
+          { token },
+        )
+        if (last?.user_preferred_name) userPreferredName = last.user_preferred_name
+        if (Array.isArray(last?.last_sets) && last.last_sets.length > 0) lastSets = last.last_sets
+      } catch {
+        // No previous performance; add exercise with no sets
+      }
+
+      const created = await apiRequest<PerformedExercise>(
+        `/workouts/${workoutId}/exercises/`,
+        {
+          method: 'POST',
+          token,
+          body: {
+            exercise: exerciseId,
+            order: nextOrder,
+            user_preferred_name: userPreferredName,
+          },
         },
-      })
+      )
+
+      for (let i = 0; i < lastSets.length; i++) {
+        const s = lastSets[i]
+        const reps = typeof s.reps === 'number' ? s.reps : parseInt(String(s.reps), 10)
+        if (isNaN(reps) || reps < 0) continue
+        await apiRequest(`/performed-exercises/${created.id}/sets/`, {
+          method: 'POST',
+          token,
+          body: {
+            order: i + 1,
+            reps,
+            weight: s.weight != null && s.weight !== '' ? Math.round(parseFloat(String(s.weight))) : null,
+            notes: s.notes ?? '',
+          },
+        })
+      }
       await fetchWorkout()
     } catch {
       // ignore

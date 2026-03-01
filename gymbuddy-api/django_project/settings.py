@@ -40,6 +40,9 @@ ALLOWED_HOSTS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://gymbuddy-api-1038994855355.us-central1.run.app",
 ]
+
+# Cloud Run terminates SSL; trust X-Forwarded-Proto so Django knows the request is HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # For physical device: run "python manage.py runserver 0.0.0.0:8000"
 
 CORS_ALLOWED_ORIGINS = [

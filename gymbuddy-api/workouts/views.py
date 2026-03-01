@@ -132,6 +132,40 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         serializer = ExerciseSerializer(exercises, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["get"], url_path="last_exercise_performance")
+    def last_exercise_performance(self, request):
+        """GET /api/v1/workouts/last_exercise_performance/?exercise_id=X - last time user did this exercise, with sets."""
+        exercise_id = request.query_params.get("exercise_id")
+        if not exercise_id:
+            return Response(
+                {"detail": "exercise_id required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            exercise_id = int(exercise_id)
+        except (TypeError, ValueError):
+            return Response(
+                {"detail": "exercise_id must be an integer"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        last = (
+            PerformedExercise.objects.filter(
+                session__user=request.user,
+                exercise_id=exercise_id,
+            )
+            .order_by("-session__date")
+            .select_related("exercise")
+            .prefetch_related("sets")
+            .first()
+        )
+        if not last:
+            return Response(
+                {"detail": "No previous performance for this exercise"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = TemplateExerciseSerializer(last)
+        return Response(serializer.data)
+
     @action(detail=False, methods=["get"])
     def template(self, request):
         """GET /api/v1/workouts/template/ - last workout's exercises with sets (for next workout)."""
