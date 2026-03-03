@@ -29,7 +29,7 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PerformedExercise
-        fields = ["id", "exercise", "user_preferred_name", "order", "sets", "note_for_next_time"]
+        fields = ["id", "exercise", "user_preferred_name", "order", "is_bodyweight", "sets", "note_for_next_time"]
 
     def get_note_for_next_time(self, instance):
         request = self.context.get("request")

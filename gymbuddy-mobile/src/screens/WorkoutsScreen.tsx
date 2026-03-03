@@ -107,8 +107,11 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
-  const [templateSource, setTemplateSource] = useState<TemplateSource>('previous')
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
+  const [templateSource, setTemplateSource] =
+    useState<TemplateSource>('previous')
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
+    null,
+  )
   const [sessionDropdownOpen, setSessionDropdownOpen] = useState(false)
 
   const fetchWorkouts = useCallback(async () => {
@@ -381,7 +384,10 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             onPress={() => {}}
             style={styles.modalContent}
           >
-            <Text style={styles.modalTitle}>New Session</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalHeaderTitle}>New Session</Text>
+            </View>
+            <View style={styles.modalBody}>
             <Text style={styles.radioGroupLabel}>Template</Text>
             <TouchableOpacity
               style={styles.radioRow}
@@ -395,7 +401,9 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   templateSource === 'previous' && styles.radioOuterSelected,
                 ]}
               >
-                {templateSource === 'previous' && <View style={styles.radioInner} />}
+                {templateSource === 'previous' && (
+                  <View style={styles.radioInner} />
+                )}
               </View>
               <Text style={styles.radioLabel}>
                 Use previous session as starting template
@@ -403,7 +411,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             </TouchableOpacity>
             {templateSource === 'previous' && template.length > 0 && (
               <Text style={styles.modalTemplate}>
-                Based on last workout:{' '}
                 {template.map((t) => t.exercise.name).join(', ')}
               </Text>
             )}
@@ -424,7 +431,9 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   templateSource === 'another' && styles.radioOuterSelected,
                 ]}
               >
-                {templateSource === 'another' && <View style={styles.radioInner} />}
+                {templateSource === 'another' && (
+                  <View style={styles.radioInner} />
+                )}
               </View>
               <Text style={styles.radioLabel}>
                 Use another session as a starting template
@@ -432,71 +441,70 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             </TouchableOpacity>
             {templateSource === 'another' && (
               <>
-                <Text style={styles.inputLabel}>Session</Text>
-                <TouchableOpacity
-                  style={styles.modalInput}
-                  onPress={() =>
-                    !createSubmitting &&
-                    setSessionDropdownOpen((open) => !open)
-                  }
-                  disabled={createSubmitting}
-                >
-                  <Text style={styles.dateButtonText}>
-                    {selectedSessionId != null
-                      ? formatSessionDate(
-                          workouts.find((w) => w.id === selectedSessionId)
-                            ?.date ?? '',
-                        )
-                      : 'Select a session...'}
-                  </Text>
-                </TouchableOpacity>
-                {sessionDropdownOpen && workouts.length > 0 && (
-                  <View style={styles.sessionDropdownList}>
-                    {[...workouts]
-                      .sort(
-                        (a, b) =>
-                          new Date(b.date).getTime() -
-                          new Date(a.date).getTime(),
-                      )
-                      .map((w) => (
-                        <TouchableOpacity
-                          key={w.id}
-                          style={[
-                            styles.sessionDropdownItem,
-                            selectedSessionId === w.id &&
-                              styles.sessionDropdownItemSelected,
-                          ]}
-                          onPress={() => {
-                            setSelectedSessionId(w.id)
-                            setSessionDropdownOpen(false)
-                          }}
-                        >
-                          <Text style={styles.sessionDropdownItemText}>
-                            {formatSessionDate(w.date)}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                  </View>
-                )}
-                {selectedSessionId != null && (() => {
-                  const w = workouts.find(
-                    (wo) => wo.id === selectedSessionId,
-                  )
-                  const exercises =
-                    w?.exercises
-                      ?.map(
-                        (pe) =>
-                          pe.user_preferred_name || pe.exercise?.name || '',
-                      )
-                      .filter(Boolean) ?? []
-                  if (exercises.length === 0) return null
-                  return (
-                    <Text style={styles.sessionExercisesPreview}>
-                      Exercises in this session:{' '}
-                      {exercises.join(', ')}
+                <View style={styles.sessionDropdownWrapper}>
+                  <TouchableOpacity
+                    style={[styles.modalInput, styles.sessionDropdownInput]}
+                    onPress={() =>
+                      !createSubmitting &&
+                      setSessionDropdownOpen((open) => !open)
+                    }
+                    disabled={createSubmitting}
+                  >
+                    <Text style={styles.dateButtonText}>
+                      {selectedSessionId != null
+                        ? formatSessionDate(
+                            workouts.find((w) => w.id === selectedSessionId)
+                              ?.date ?? '',
+                          )
+                        : 'Select a session...'}
                     </Text>
-                  )
-                })()}
+                  </TouchableOpacity>
+                  {sessionDropdownOpen && workouts.length > 0 && (
+                    <View style={styles.sessionDropdownList}>
+                      {[...workouts]
+                        .sort(
+                          (a, b) =>
+                            new Date(b.date).getTime() -
+                            new Date(a.date).getTime(),
+                        )
+                        .map((w) => (
+                          <TouchableOpacity
+                            key={w.id}
+                            style={[
+                              styles.sessionDropdownItem,
+                              selectedSessionId === w.id &&
+                                styles.sessionDropdownItemSelected,
+                            ]}
+                            onPress={() => {
+                              setSelectedSessionId(w.id)
+                              setSessionDropdownOpen(false)
+                            }}
+                          >
+                            <Text style={styles.sessionDropdownItemText}>
+                              {formatSessionDate(w.date)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  )}
+                </View>
+                {selectedSessionId != null &&
+                  (() => {
+                    const w = workouts.find((wo) => wo.id === selectedSessionId)
+                    const exercises =
+                      w?.exercises
+                        ?.map(
+                          (pe) =>
+                            pe.user_preferred_name || pe.exercise?.name || '',
+                        )
+                        .filter(Boolean) ?? []
+                    if (exercises.length === 0) return null
+                    return (
+                      <Text style={styles.sessionExercisesPreview}>
+                        {exercises.join(', ')}
+                      </Text>
+                    )
+                  })()}
               </>
             )}
             <TouchableOpacity
@@ -517,10 +525,13 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   templateSource === 'none' && styles.radioOuterSelected,
                 ]}
               >
-                {templateSource === 'none' && <View style={styles.radioInner} />}
+                {templateSource === 'none' && (
+                  <View style={styles.radioInner} />
+                )}
               </View>
               <Text style={styles.radioLabel}>Start without a template</Text>
             </TouchableOpacity>
+            <View style={styles.templateSectionSpacer} />
             <Text style={styles.inputLabel}>Date</Text>
             <TouchableOpacity
               style={styles.modalInput}
@@ -601,6 +612,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   <Text style={styles.modalCreateText}>Create</Text>
                 )}
               </TouchableOpacity>
+            </View>
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -797,15 +809,26 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#ffdfb8',
     borderRadius: 12,
-    padding: 24,
     width: '100%',
     maxWidth: 400,
+    overflow: 'hidden',
   },
-  modalTitle: {
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#5A4A2F',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e7e5e4',
+  },
+  modalHeaderTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1c1917',
-    marginBottom: 16,
+    color: '#fff',
+  },
+  modalBody: {
+    padding: 24,
   },
   radioGroupLabel: {
     fontSize: 14,
@@ -819,23 +842,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 12,
   },
+  templateSectionSpacer: {
+    height: 16,
+  },
   radioOuter: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#d6d3d1',
+    borderColor: '#5A4A2F',
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioOuterSelected: {
-    borderColor: '#f59e0b',
+    borderColor: '#5A4A2F',
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#5A4A2F',
   },
   radioLabel: {
     flex: 1,
@@ -846,12 +872,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#57534e',
     marginBottom: 16,
+    marginLeft: 34,
   },
   sessionExercisesPreview: {
     fontSize: 14,
     color: '#57534e',
-    marginTop: 8,
+    marginTop: 2,
     marginBottom: 16,
+    marginLeft: 34,
   },
   templateCheckRow: {
     flexDirection: 'row',
@@ -863,6 +891,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#44403c',
+  },
+  sessionDropdownWrapper: {
+    marginLeft: 34,
+    alignSelf: 'flex-start',
+    minWidth: 200,
+  },
+  sessionDropdownInput: {
+    marginBottom: 6,
   },
   sessionDropdownList: {
     maxHeight: 200,

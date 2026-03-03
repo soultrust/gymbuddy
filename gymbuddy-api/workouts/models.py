@@ -70,6 +70,7 @@ class PerformedExercise(models.Model):
     )
     user_preferred_name = models.CharField(max_length=100, blank=True)
     order = models.PositiveSmallIntegerField()  # position in the workout: 1,2,3,...
+    is_bodyweight = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["order"]

@@ -34,6 +34,7 @@ type PerformedExercise = {
   exercise: { id: number; name: string }
   user_preferred_name?: string
   order: number
+  is_bodyweight?: boolean
   sets: SetEntry[]
   note_for_next_time?: string
 }
@@ -99,9 +100,10 @@ export default function WorkoutDetailScreen({
   >([])
   const [loading, setLoading] = useState(true)
   const [newExerciseName, setNewExerciseName] = useState('')
+  const [newExerciseBodyweight, setNewExerciseBodyweight] = useState(false)
   const [addingExercise, setAddingExercise] = useState(false)
   const [addingSetFor, setAddingSetFor] = useState<number | null>(null)
-  const [newSetReps, setNewSetReps] = useState('10')
+  const [newSetReps, setNewSetReps] = useState('1')
   const [newSetWeight, setNewSetWeight] = useState('')
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
   const [editingSetReps, setEditingSetReps] = useState('')
@@ -134,7 +136,16 @@ export default function WorkoutDetailScreen({
       const data = await apiRequest<Workout>(`/workouts/${workoutId}/`, {
         token,
       })
-      setWorkout(data)
+      setWorkout((prev) => {
+        if (!prev?.exercises?.length || !data.exercises) return data
+        const exercises = data.exercises.map((e) => {
+          const prevEx = prev.exercises.find((p) => p.id === e.id)
+          if (prevEx?.is_bodyweight === true)
+            return { ...e, is_bodyweight: true }
+          return e
+        })
+        return { ...data, exercises }
+      })
     } catch {
       setWorkout(null)
     }
@@ -197,8 +208,12 @@ export default function WorkoutDetailScreen({
   const setWeightInteger = (setter: (v: string) => void, text: string) =>
     setter(text.split('.')[0].replace(/[^0-9]/g, ''))
 
-  const formatWeight = (w: string | number | undefined) =>
-    w != null && w !== '' ? String(Math.round(Number(w))) : ''
+  const formatWeight = (w: string | number | undefined) => {
+    if (w == null || w === '') return ''
+    const n = Number(w)
+    if (Number.isNaN(n) || n === 0) return ''
+    return String(Math.round(n))
+  }
 
   const formatLastSets = (sets: SetEntry[]) => {
     if (sets.length === 0) return null
@@ -213,6 +228,7 @@ export default function WorkoutDetailScreen({
   const handleAddSet = async (
     performedExerciseId: number,
     currentSets: SetEntry[],
+    keepAdding = false,
   ) => {
     if (!token || !workout) return
     const nextOrder =
@@ -222,18 +238,25 @@ export default function WorkoutDetailScreen({
     const reps = parseInt(newSetReps, 10)
     if (isNaN(reps) || reps < 0) return
     try {
+      const isBodyweight = workout.exercises.find(
+        (e) => e.id === performedExerciseId,
+      )?.is_bodyweight
       await apiRequest(`/performed-exercises/${performedExerciseId}/sets/`, {
         method: 'POST',
         token,
         body: {
           order: nextOrder,
           reps,
-          weight: newSetWeight ? Math.round(parseFloat(newSetWeight)) : null,
+          weight: isBodyweight
+            ? 0
+            : newSetWeight
+              ? Math.round(parseFloat(newSetWeight))
+              : null,
           notes: '',
         },
       })
-      setAddingSetFor(null)
-      setNewSetReps('10')
+      if (!keepAdding) setAddingSetFor(null)
+      setNewSetReps('1')
       setNewSetWeight('')
       await fetchWorkout()
     } catch {
@@ -267,7 +290,11 @@ export default function WorkoutDetailScreen({
 
   const handleSaveSet = async (set: SetEntry) => {
     const reps = parseInt(editingSetReps, 10)
-    await saveSetToApi(set, reps, editingSetWeight, true)
+    const pe = workout?.exercises.find((e) =>
+      e.sets.some((ss) => ss.id === set.id),
+    )
+    const weight = pe?.is_bodyweight ? '0' : editingSetWeight
+    await saveSetToApi(set, reps, weight, true)
   }
 
   const handleSaveDate = async (dateToSave?: Date) => {
@@ -304,7 +331,17 @@ export default function WorkoutDetailScreen({
   }
 
   const dismissEditSet = () => {
-    if (editingSetId === null || !workout) return
+    if (!workout) return
+    if (addingSetFor !== null) {
+      const pe = workout.exercises.find((e) => e.id === addingSetFor)
+      if (pe) {
+        Keyboard.dismiss()
+        handleAddSet(addingSetFor, pe.sets)
+      }
+      setAddingSetFor(null)
+      return
+    }
+    if (editingSetId === null) return
     for (const pe of workout.exercises) {
       const set = pe.sets.find((se) => se.id === editingSetId)
       if (set) {
@@ -390,25 +427,52 @@ export default function WorkoutDetailScreen({
   }
 
   const handleAddExercise = async () => {
-    if (!token || !newExerciseName.trim()) return
+    if (!token || !newExerciseName.trim() || !workout) return
     setAddingExercise(true)
+    const wasBodyweight = newExerciseBodyweight
     try {
-      const exercises = workout?.exercises ?? []
+      const exercises = workout.exercises ?? []
       const nextOrder =
         exercises.length > 0
           ? Math.max(...exercises.map((e) => e.order)) + 1
           : 1
-      await apiRequest(`/workouts/${workoutId}/exercises/`, {
-        method: 'POST',
-        token,
-        body: {
-          exercise_name: newExerciseName.trim(),
-          order: nextOrder,
-          user_preferred_name: '',
+      const created = await apiRequest<PerformedExercise>(
+        `/workouts/${workoutId}/exercises/`,
+        {
+          method: 'POST',
+          token,
+          body: {
+            exercise_name: newExerciseName.trim(),
+            order: nextOrder,
+            user_preferred_name: '',
+            is_bodyweight: wasBodyweight,
+          },
         },
-      })
+      )
       setNewExerciseName('')
-      await fetchWorkout()
+      setNewExerciseBodyweight(false)
+      if (created) {
+        created.is_bodyweight = wasBodyweight
+        setWorkout((prev) => {
+          if (!prev) return prev
+          const next = [...(prev.exercises || []), created].sort(
+            (a, b) => a.order - b.order,
+          )
+          return { ...prev, exercises: next }
+        })
+      }
+      const fresh = await apiRequest<Workout>(`/workouts/${workoutId}/`, {
+        token,
+      }).catch(() => null)
+      if (fresh) {
+        const exercises =
+          created && wasBodyweight
+            ? (fresh.exercises?.map((e) =>
+                e.id === created.id ? { ...e, is_bodyweight: true } : e,
+              ) ?? fresh.exercises)
+            : fresh.exercises
+        setWorkout({ ...fresh, exercises: exercises ?? [] })
+      }
     } catch {
       // ignore
     } finally {
@@ -433,8 +497,10 @@ export default function WorkoutDetailScreen({
           `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,
           { token },
         )
-        if (last?.user_preferred_name) userPreferredName = last.user_preferred_name
-        if (Array.isArray(last?.last_sets) && last.last_sets.length > 0) lastSets = last.last_sets
+        if (last?.user_preferred_name)
+          userPreferredName = last.user_preferred_name
+        if (Array.isArray(last?.last_sets) && last.last_sets.length > 0)
+          lastSets = last.last_sets
       } catch {
         // No previous performance; add exercise with no sets
       }
@@ -454,7 +520,8 @@ export default function WorkoutDetailScreen({
 
       for (let i = 0; i < lastSets.length; i++) {
         const s = lastSets[i]
-        const reps = typeof s.reps === 'number' ? s.reps : parseInt(String(s.reps), 10)
+        const reps =
+          typeof s.reps === 'number' ? s.reps : parseInt(String(s.reps), 10)
         if (isNaN(reps) || reps < 0) continue
         await apiRequest(`/performed-exercises/${created.id}/sets/`, {
           method: 'POST',
@@ -462,7 +529,10 @@ export default function WorkoutDetailScreen({
           body: {
             order: i + 1,
             reps,
-            weight: s.weight != null && s.weight !== '' ? Math.round(parseFloat(String(s.weight))) : null,
+            weight:
+              s.weight != null && s.weight !== ''
+                ? Math.round(parseFloat(String(s.weight)))
+                : null,
             notes: s.notes ?? '',
           },
         })
@@ -597,6 +667,7 @@ export default function WorkoutDetailScreen({
               workout.exercises.map((pe) => {
                 const lastSets = getLastSets(pe.exercise.id)
                 const lastText = formatLastSets(lastSets)
+                const isBodyweight = Boolean(pe.is_bodyweight)
                 return (
                   <View key={pe.id} style={styles.exerciseCard}>
                     <View style={styles.exerciseHeader}>
@@ -663,7 +734,7 @@ export default function WorkoutDetailScreen({
                                     saveSetToApi(
                                       s,
                                       parseInt(next, 10),
-                                      editingSetWeight,
+                                      isBodyweight ? '0' : editingSetWeight,
                                       false,
                                     )
                                   }}
@@ -683,7 +754,12 @@ export default function WorkoutDetailScreen({
                                       (parseInt(editingSetReps, 10) || 0) + 1
                                     const next = String(v)
                                     setEditingSetReps(next)
-                                    saveSetToApi(s, v, editingSetWeight, false)
+                                    saveSetToApi(
+                                      s,
+                                      v,
+                                      isBodyweight ? '0' : editingSetWeight,
+                                      false,
+                                    )
                                   }}
                                 >
                                   <StepperArrowIcon
@@ -692,18 +768,20 @@ export default function WorkoutDetailScreen({
                                   />
                                 </TouchableOpacity>
                               </View>
-                              <View style={styles.setEditRight}>
-                                <TextInput
-                                  style={styles.setInput}
-                                  value={editingSetWeight}
-                                  onChangeText={(t) =>
-                                    setWeightInteger(setEditingSetWeight, t)
-                                  }
-                                  onBlur={() => handleSaveSet(s)}
-                                  placeholder="lbs"
-                                  keyboardType="numeric"
-                                />
-                              </View>
+                              {!isBodyweight && (
+                                <View style={styles.setEditRight}>
+                                  <TextInput
+                                    style={styles.setInput}
+                                    value={editingSetWeight}
+                                    onChangeText={(t) =>
+                                      setWeightInteger(setEditingSetWeight, t)
+                                    }
+                                    onBlur={() => handleSaveSet(s)}
+                                    placeholder="lbs"
+                                    keyboardType="numeric"
+                                  />
+                                </View>
+                              )}
                             </Animated.View>
                           </TouchableWithoutFeedback>
                         ) : (
@@ -728,18 +806,22 @@ export default function WorkoutDetailScreen({
                                   {s.reps} reps
                                 </Text>
                               </View>
-                              <Text style={styles.setValue}>
-                                {formatWeight(s.weight)
-                                  ? `${formatWeight(s.weight)} lbs`
-                                  : '—'}
-                              </Text>
+                              {!isBodyweight && (
+                                <Text style={styles.setValue}>
+                                  {formatWeight(s.weight)
+                                    ? `${formatWeight(s.weight)} lbs`
+                                    : '—'}
+                                </Text>
+                              )}
                             </TouchableOpacity>
                           </View>
                         ),
                       )}
                       <View style={styles.addSetNotesColumn}>
                         {addingSetFor === pe.id && (
-                          <View style={[styles.addSetRow, styles.addSetRowEditing]}>
+                          <View
+                            style={[styles.addSetRow, styles.addSetRowEditing]}
+                          >
                             <TouchableOpacity
                               onPress={() => setAddingSetFor(null)}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -771,13 +853,19 @@ export default function WorkoutDetailScreen({
                                     color="#1c1917"
                                   />
                                 </TouchableOpacity>
-                                <Text style={[styles.stepperValue, { color: '#1c1917' }]}>
+                                <Text
+                                  style={[
+                                    styles.stepperValue,
+                                    { color: '#1c1917' },
+                                  ]}
+                                >
                                   {newSetReps || '0'}
                                 </Text>
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v = (parseInt(newSetReps, 10) || 0) + 1
+                                    const v =
+                                      (parseInt(newSetReps, 10) || 0) + 1
                                     setNewSetReps(String(v))
                                   }}
                                 >
@@ -788,28 +876,42 @@ export default function WorkoutDetailScreen({
                                 </TouchableOpacity>
                               </View>
                             </View>
-                            <TextInput
-                              style={[styles.inputSmall, styles.addSetInputEditing]}
-                              value={newSetWeight}
-                              onChangeText={(t) =>
-                                setWeightInteger(setNewSetWeight, t)
-                              }
-                              onBlur={() => handleAddSet(pe.id, pe.sets)}
-                              placeholder="Weight"
-                              placeholderTextColor="#78716c"
-                              keyboardType="numeric"
-                            />
+                            {!isBodyweight && (
+                              <TextInput
+                                style={[
+                                  styles.inputSmall,
+                                  styles.addSetInputEditing,
+                                ]}
+                                value={newSetWeight}
+                                onChangeText={(t) =>
+                                  setWeightInteger(setNewSetWeight, t)
+                                }
+                                onBlur={() => handleAddSet(pe.id, pe.sets)}
+                                placeholder="Weight"
+                                placeholderTextColor="#78716c"
+                                keyboardType="numeric"
+                              />
+                            )}
                           </View>
                         )}
-                        <View style={[styles.addSetNotesRow, addingSetFor === pe.id && styles.addSetNotesRowBelow]}>
+                        <View
+                          style={[
+                            styles.addSetNotesRow,
+                            addingSetFor === pe.id &&
+                              styles.addSetNotesRowBelow,
+                          ]}
+                        >
                           <TouchableOpacity
                             onPress={() => {
-                              if (addingSetFor === pe.id) return
+                              if (addingSetFor === pe.id) {
+                                handleAddSet(pe.id, pe.sets, true)
+                                return
+                              }
                               setEditingSetId(null)
                               setAddingSetFor(pe.id)
                               const last = pe.sets[pe.sets.length - 1]
+                              setNewSetReps('1')
                               if (last) {
-                                setNewSetReps(String(last.reps))
                                 setNewSetWeight(formatWeight(last.weight))
                               }
                             }}
@@ -818,8 +920,17 @@ export default function WorkoutDetailScreen({
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => setExpandedNotesFor(pe.id)}
+                            style={styles.notesLinkRow}
                           >
-                            <Text style={styles.notesLink}>Notes</Text>
+                            {pe.note_for_next_time ? (
+                              <Ionicons
+                                name="notifications"
+                                size={16}
+                                color="#d97706"
+                                style={styles.notesBellIcon}
+                              />
+                            ) : null}
+                            <Text style={styles.notesLink}>Note</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -828,21 +939,20 @@ export default function WorkoutDetailScreen({
                         <View style={styles.notesOverlay}>
                           <View style={styles.notesPanel}>
                             {pe.note_for_next_time ? (
-                              <View style={styles.notesFromLastTime}>
+                              <>
                                 <Text style={styles.notesFromLastTimeLabel}>
                                   Note from last time
                                 </Text>
-                                <Text style={styles.notesFromLastTimeText}>
-                                  {pe.note_for_next_time}
-                                </Text>
-                              </View>
+                                <View style={styles.notesFromLastTime}>
+                                  <Text style={styles.notesFromLastTimeText}>
+                                    {pe.note_for_next_time}
+                                  </Text>
+                                </View>
+                              </>
                             ) : null}
                             <View style={styles.notesSection}>
                               <Text style={styles.notesLabel}>
-                                Notes{' '}
-                                <Text style={styles.notesLabelHint}>
-                                  (shown on the next instance of this exercise)
-                                </Text>
+                                Note for next time
                               </Text>
                               <TextInput
                                 style={styles.notesInput}
@@ -865,8 +975,10 @@ export default function WorkoutDetailScreen({
                               const note = (
                                 getNotesFor(pe.id).nextTimeNote ?? ''
                               ).trim()
-                              setExpandedNotesFor(null)
-                              if (note.length === 0) return
+                              if (note.length === 0) {
+                                setExpandedNotesFor(null)
+                                return
+                              }
                               try {
                                 await apiRequest(
                                   `/performed-exercises/${pe.id}/note_for_next_time/`,
@@ -876,7 +988,12 @@ export default function WorkoutDetailScreen({
                                     token,
                                   },
                                 )
-                                fetchWorkout()
+                                setNotesFor(pe.id, (prev) => ({
+                                  ...prev,
+                                  nextTimeNote: '',
+                                }))
+                                await fetchWorkout()
+                                setExpandedNotesFor(null)
                               } catch (e) {
                                 Alert.alert(
                                   'Could not save note',
@@ -898,9 +1015,11 @@ export default function WorkoutDetailScreen({
             {userExercises.length > 0 && (
               <View style={[styles.addPastExerciseSection, styles.card]}>
                 <Text style={styles.addPastExerciseLabel}>
-                Add past exercise{' '}
-                <Text style={styles.addPastExerciseHint}>(uses data from last time)</Text>
-              </Text>
+                  Add past exercise{' '}
+                  <Text style={styles.addPastExerciseHint}>
+                    (uses data from last time)
+                  </Text>
+                </Text>
                 <ScrollView
                   style={styles.addPastExerciseList}
                   nestedScrollEnabled
@@ -923,26 +1042,40 @@ export default function WorkoutDetailScreen({
             )}
             <View style={[styles.addExerciseSection, styles.card]}>
               <Text style={styles.addPastExerciseLabel}>Add New Exercise</Text>
-              <View style={styles.addExerciseRow}>
-                <TextInput
-                  style={styles.addExerciseInput}
-                  value={newExerciseName}
-                  onChangeText={setNewExerciseName}
-                  placeholder="e.g. Bench Press"
-                  placeholderTextColor="#a8a29e"
+              <TextInput
+                style={[styles.addExerciseInput, styles.addExerciseInputFull]}
+                value={newExerciseName}
+                onChangeText={setNewExerciseName}
+                placeholder="e.g. Bench Press"
+                placeholderTextColor="#a8a29e"
+              />
+              <TouchableOpacity
+                style={styles.addExerciseCheckboxRow}
+                onPress={() => setNewExerciseBodyweight((v) => !v)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={newExerciseBodyweight ? 'checkbox' : 'square-outline'}
+                  size={22}
+                  color="#5A4A2F"
+                  style={styles.addExerciseCheckboxIcon}
                 />
-                <TouchableOpacity
-                  onPress={handleAddExercise}
-                  disabled={addingExercise || !newExerciseName.trim()}
-                  style={[
-                    styles.addExerciseBtn,
-                    (!newExerciseName.trim() || addingExercise) &&
-                      styles.addExerciseBtnDisabled,
-                  ]}
-                >
-                  <Text style={styles.addExerciseBtnText}>Add</Text>
-                </TouchableOpacity>
-              </View>
+                <Text style={styles.addExerciseCheckboxLabel}>
+                  Bodyweight (no extra weight)
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleAddExercise}
+                disabled={addingExercise || !newExerciseName.trim()}
+                style={[
+                  styles.addExerciseBtn,
+                  styles.addExerciseBtnFull,
+                  (!newExerciseName.trim() || addingExercise) &&
+                    styles.addExerciseBtnDisabled,
+                ]}
+              >
+                <Text style={styles.addExerciseBtnText}>Add</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -1198,6 +1331,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  notesLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notesBellIcon: {
+    marginRight: 4,
+  },
   notesLink: {
     fontSize: 14,
     color: '#d97706',
@@ -1228,11 +1368,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   notesFromLastTimeLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#78716c',
     marginBottom: 4,
-    textTransform: 'uppercase',
   },
   notesFromLastTimeText: {
     fontSize: 14,
@@ -1246,11 +1385,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#44403c',
     marginBottom: 6,
-  },
-  notesLabelHint: {
-    fontWeight: '400',
-    color: '#78716c',
-    fontSize: 12,
   },
   notesInput: {
     height: 36,
@@ -1320,13 +1454,7 @@ const styles = StyleSheet.create({
   addExerciseSection: {
     marginTop: 24,
   },
-  addExerciseRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
   addExerciseInput: {
-    flex: 1,
     borderWidth: 1,
     borderColor: '#d6d3d1',
     borderRadius: 12,
@@ -1334,13 +1462,40 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#fff4e6',
+    marginTop: 8,
+  },
+  addExerciseInputFull: {
+    width: '100%',
+  },
+  addExerciseCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  addExerciseCheckboxIcon: {
+    marginRight: 8,
+  },
+  addExerciseCheckboxLabel: {
+    fontSize: 15,
+    color: '#44403c',
   },
   addExerciseBtn: {
     paddingHorizontal: 20,
+    paddingVertical: 12,
     justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#f59e0b',
     borderRadius: 12,
+    marginTop: 12,
+  },
+  addExerciseBtnFull: {
+    width: '100%',
   },
   addExerciseBtnDisabled: { opacity: 0.5 },
-  addExerciseBtnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  addExerciseBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+    textAlign: 'center',
+  },
 })

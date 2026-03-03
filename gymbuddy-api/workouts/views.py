@@ -195,6 +195,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     def _add_exercise(self, session, request):
         data = dict(request.data)
         exercise_name = data.pop("exercise_name", None)
+        is_bodyweight = data.pop("is_bodyweight", False)
         if exercise_name:
             name = (
                 exercise_name[0]
@@ -208,7 +209,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             data["exercise"] = exercise.id
         serializer = PerformedExerciseSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(session=session)
+            serializer.save(session=session, is_bodyweight=bool(is_bodyweight))
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
