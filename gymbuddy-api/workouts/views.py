@@ -119,6 +119,20 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             kwargs["date"] = serializer.validated_data["date"]
         serializer.save(**kwargs)
 
+    def perform_update(self, serializer):
+        serializer.save()
+        session = serializer.instance
+        # Clear "note for next time" for every exercise in this workout so the note
+        # only appears on the next time the exercise is done, then disappears.
+        exercise_ids = list(
+            session.exercises.values_list("exercise_id", flat=True).distinct()
+        )
+        if exercise_ids:
+            UserExerciseNote.objects.filter(
+                user=session.user_id,
+                exercise_id__in=exercise_ids,
+            ).delete()
+
     @action(detail=False, methods=["get"])
     def user_exercises(self, request):
         """GET /api/v1/workouts/user_exercises/ - distinct exercises the user has ever performed."""
@@ -238,6 +252,11 @@ class PerformedExerciseViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(performed_exercise=exercise)
+        # Clear "note for next time" so it only showed this once (next time they did the exercise).
+        UserExerciseNote.objects.filter(
+            user=request.user,
+            exercise=exercise.exercise,
+        ).delete()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
@@ -268,6 +287,15 @@ class SetEntryViewSet(
 
     def get_queryset(self):
         return self.queryset.filter(performed_exercise__session__user=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save()
+        # Clear "note for next time" for this exercise so it only showed once.
+        instance = serializer.instance
+        UserExerciseNote.objects.filter(
+            user=self.request.user,
+            exercise_id=instance.performed_exercise.exercise_id,
+        ).delete()
 
     def perform_destroy(self, instance):
         performed_exercise_id = instance.performed_exercise_id
