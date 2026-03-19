@@ -205,14 +205,23 @@ export default function WorkoutDetailScreen({
   const getLastSets = (exerciseId: number) =>
     previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? []
 
-  const setWeightInteger = (setter: (v: string) => void, text: string) =>
-    setter(text.split('.')[0].replace(/[^0-9]/g, ''))
+  const setWeightDecimal = (setter: (v: string) => void, text: string) => {
+    const cleaned = text.replace(/[^0-9.]/g, '')
+    const [whole = '', ...rest] = cleaned.split('.')
+    if (rest.length === 0) {
+      setter(whole)
+      return
+    }
+    const fractional = rest.join('').slice(0, 2)
+    const normalizedWhole = whole.length > 0 ? whole : '0'
+    setter(`${normalizedWhole}.${fractional}`)
+  }
 
   const formatWeight = (w: string | number | undefined) => {
     if (w == null || w === '') return ''
     const n = Number(w)
     if (Number.isNaN(n) || n === 0) return ''
-    return String(Math.round(n))
+    return String(n)
   }
 
   const formatLastSets = (sets: SetEntry[]) => {
@@ -250,7 +259,7 @@ export default function WorkoutDetailScreen({
           weight: isBodyweight
             ? 0
             : newSetWeight
-              ? Math.round(parseFloat(newSetWeight))
+              ? parseFloat(newSetWeight)
               : null,
           notes: '',
         },
@@ -278,7 +287,7 @@ export default function WorkoutDetailScreen({
         token,
         body: {
           reps,
-          weight: weight ? Math.round(parseFloat(weight)) : null,
+          weight: weight ? parseFloat(weight) : null,
         },
       })
       if (exitEdit) setEditingSetId(null)
@@ -531,7 +540,7 @@ export default function WorkoutDetailScreen({
             reps,
             weight:
               s.weight != null && s.weight !== ''
-                ? Math.round(parseFloat(String(s.weight)))
+                ? parseFloat(String(s.weight))
                 : null,
             notes: s.notes ?? '',
           },
@@ -774,11 +783,11 @@ export default function WorkoutDetailScreen({
                                     style={styles.setInput}
                                     value={editingSetWeight}
                                     onChangeText={(t) =>
-                                      setWeightInteger(setEditingSetWeight, t)
+                                      setWeightDecimal(setEditingSetWeight, t)
                                     }
                                     onBlur={() => handleSaveSet(s)}
                                     placeholder="lbs"
-                                    keyboardType="numeric"
+                                    keyboardType="decimal-pad"
                                   />
                                 </View>
                               )}
@@ -884,12 +893,12 @@ export default function WorkoutDetailScreen({
                                 ]}
                                 value={newSetWeight}
                                 onChangeText={(t) =>
-                                  setWeightInteger(setNewSetWeight, t)
+                                  setWeightDecimal(setNewSetWeight, t)
                                 }
                                 onBlur={() => handleAddSet(pe.id, pe.sets)}
                                 placeholder="Weight"
                                 placeholderTextColor="#78716c"
-                                keyboardType="numeric"
+                                keyboardType="decimal-pad"
                               />
                             )}
                           </View>

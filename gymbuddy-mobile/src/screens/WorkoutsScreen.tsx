@@ -299,8 +299,11 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const getExerciseForWorkout = (workout: Workout, exerciseId: number) =>
     (workout.exercises || []).find((pe) => pe.exercise?.id === exerciseId)
 
-  const formatWeight = (w: string | number | undefined) =>
-    w != null && w !== '' ? String(Math.round(Number(w))) : ''
+  const formatWeight = (w: string | number | undefined) => {
+    if (w == null || w === '') return ''
+    const n = Number(w)
+    return Number.isNaN(n) ? '' : String(n)
+  }
 
   const renderSetChips = (pe: PerformedExercise) => {
     const sets = pe.sets || []
