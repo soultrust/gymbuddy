@@ -86,7 +86,7 @@ class SetEntry(models.Model):
         related_name="sets",
     )
     order = models.PositiveSmallIntegerField()
-    reps = models.PositiveSmallIntegerField()
+    reps = models.DecimalField(max_digits=5, decimal_places=2)
     weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     notes = models.CharField(max_length=200, blank=True)
 
