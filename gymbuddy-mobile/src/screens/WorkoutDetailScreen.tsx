@@ -217,6 +217,33 @@ export default function WorkoutDetailScreen({
     setter(`${normalizedWhole}.${fractional}`)
   }
 
+  const setRepsDecimal = (setter: (v: string) => void, text: string) => {
+    const cleaned = text.replace(/[^0-9.]/g, '')
+    const [whole = '', ...rest] = cleaned.split('.')
+    if (rest.length === 0) {
+      setter(whole)
+      return
+    }
+    const fractional = rest.join('').slice(0, 2)
+    const normalizedWhole = whole.length > 0 ? whole : '0'
+    setter(`${normalizedWhole}.${fractional}`)
+  }
+
+  const parseReps = (value: string) => {
+    const n = parseFloat(value)
+    if (Number.isNaN(n) || n < 0) return null
+    return n
+  }
+
+  const stepRepsValue = (value: string, direction: 'prev' | 'next') => {
+    const n = parseFloat(value)
+    if (Number.isNaN(n) || n < 0) return direction === 'prev' ? 0 : 1
+    if (Number.isInteger(n)) {
+      return direction === 'prev' ? Math.max(0, n - 1) : n + 1
+    }
+    return direction === 'prev' ? Math.floor(n) : Math.ceil(n)
+  }
+
   const formatWeight = (w: string | number | undefined) => {
     if (w == null || w === '') return ''
     const n = Number(w)
@@ -244,8 +271,8 @@ export default function WorkoutDetailScreen({
       currentSets.length > 0
         ? Math.max(...currentSets.map((s) => s.order)) + 1
         : 1
-    const reps = parseInt(newSetReps, 10)
-    if (isNaN(reps) || reps < 0) return
+    const reps = parseReps(newSetReps)
+    if (reps == null) return
     try {
       const isBodyweight = workout.exercises.find(
         (e) => e.id === performedExerciseId,
@@ -298,7 +325,8 @@ export default function WorkoutDetailScreen({
   }
 
   const handleSaveSet = async (set: SetEntry) => {
-    const reps = parseInt(editingSetReps, 10)
+    const reps = parseReps(editingSetReps)
+    if (reps == null) return
     const pe = workout?.exercises.find((e) =>
       e.sets.some((ss) => ss.id === set.id),
     )
@@ -530,8 +558,8 @@ export default function WorkoutDetailScreen({
       for (let i = 0; i < lastSets.length; i++) {
         const s = lastSets[i]
         const reps =
-          typeof s.reps === 'number' ? s.reps : parseInt(String(s.reps), 10)
-        if (isNaN(reps) || reps < 0) continue
+          typeof s.reps === 'number' ? s.reps : parseFloat(String(s.reps))
+        if (Number.isNaN(reps) || reps < 0) continue
         await apiRequest(`/performed-exercises/${created.id}/sets/`, {
           method: 'POST',
           token,
@@ -734,15 +762,15 @@ export default function WorkoutDetailScreen({
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v = Math.max(
-                                      0,
-                                      parseInt(editingSetReps, 10) - 1,
+                                    const v = stepRepsValue(
+                                      editingSetReps,
+                                      'prev',
                                     )
-                                    const next = String(isNaN(v) ? 0 : v)
+                                    const next = String(v)
                                     setEditingSetReps(next)
                                     saveSetToApi(
                                       s,
-                                      parseInt(next, 10),
+                                      v,
                                       isBodyweight ? '0' : editingSetWeight,
                                       false,
                                     )
@@ -753,14 +781,22 @@ export default function WorkoutDetailScreen({
                                     color="#44403c"
                                   />
                                 </TouchableOpacity>
-                                <Text style={styles.stepperValue}>
-                                  {editingSetReps || '0'}
-                                </Text>
+                                <TextInput
+                                  style={styles.stepperValue}
+                                  value={editingSetReps}
+                                  onChangeText={(t) =>
+                                    setRepsDecimal(setEditingSetReps, t)
+                                  }
+                                  onBlur={() => handleSaveSet(s)}
+                                  keyboardType="decimal-pad"
+                                />
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v =
-                                      (parseInt(editingSetReps, 10) || 0) + 1
+                                    const v = stepRepsValue(
+                                      editingSetReps,
+                                      'next',
+                                    )
                                     const next = String(v)
                                     setEditingSetReps(next)
                                     saveSetToApi(
@@ -850,11 +886,8 @@ export default function WorkoutDetailScreen({
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v = Math.max(
-                                      0,
-                                      parseInt(newSetReps, 10) - 1,
-                                    )
-                                    setNewSetReps(String(isNaN(v) ? 0 : v))
+                                    const v = stepRepsValue(newSetReps, 'prev')
+                                    setNewSetReps(String(v))
                                   }}
                                 >
                                   <StepperArrowIcon
@@ -862,19 +895,22 @@ export default function WorkoutDetailScreen({
                                     color="#1c1917"
                                   />
                                 </TouchableOpacity>
-                                <Text
+                                <TextInput
                                   style={[
                                     styles.stepperValue,
                                     { color: '#1c1917' },
                                   ]}
+                                  value={newSetReps}
+                                  onChangeText={(t) =>
+                                    setRepsDecimal(setNewSetReps, t)
+                                  }
+                                  keyboardType="decimal-pad"
                                 >
-                                  {newSetReps || '0'}
-                                </Text>
+                                </TextInput>
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v =
-                                      (parseInt(newSetReps, 10) || 0) + 1
+                                    const v = stepRepsValue(newSetReps, 'next')
                                     setNewSetReps(String(v))
                                   }}
                                 >
