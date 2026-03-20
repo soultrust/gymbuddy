@@ -244,11 +244,15 @@ export default function WorkoutDetailScreen({
     return direction === 'prev' ? Math.floor(n) : Math.ceil(n)
   }
 
+  const formatNumber = (v: string | number | undefined) => {
+    if (v == null || v === '') return ''
+    const n = parseFloat(String(v))
+    return Number.isNaN(n) ? '' : String(n)
+  }
+
   const formatWeight = (w: string | number | undefined) => {
-    if (w == null || w === '') return ''
-    const n = Number(w)
-    if (Number.isNaN(n) || n === 0) return ''
-    return String(n)
+    const s = formatNumber(w)
+    return s === '0' ? '' : s
   }
 
   const formatLastSets = (sets: SetEntry[]) => {
@@ -256,7 +260,7 @@ export default function WorkoutDetailScreen({
     return sets
       .map((s) => {
         const w = formatWeight(s.weight)
-        return `${s.reps} reps${w ? ` @ ${w}lbs` : ''}`
+        return `${formatNumber(s.reps)} reps${w ? ` @ ${w}lbs` : ''}`
       })
       .join(', ')
   }
@@ -841,14 +845,14 @@ export default function WorkoutDetailScreen({
                               onPress={() => {
                                 setAddingSetFor(null)
                                 setEditingSetId(s.id)
-                                setEditingSetReps(String(s.reps))
+                                setEditingSetReps(formatNumber(s.reps))
                                 setEditingSetWeight(formatWeight(s.weight))
                               }}
                               activeOpacity={0.7}
                             >
                               <View style={styles.setRepsCentered}>
                                 <Text style={styles.setValue}>
-                                  {s.reps} reps
+                                  {formatNumber(s.reps)} reps
                                 </Text>
                               </View>
                               {!isBodyweight && (

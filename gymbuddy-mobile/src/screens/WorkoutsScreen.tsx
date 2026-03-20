@@ -299,10 +299,15 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const getExerciseForWorkout = (workout: Workout, exerciseId: number) =>
     (workout.exercises || []).find((pe) => pe.exercise?.id === exerciseId)
 
-  const formatWeight = (w: string | number | undefined) => {
-    if (w == null || w === '') return ''
-    const n = Number(w)
+  const formatNumber = (v: string | number | undefined) => {
+    if (v == null || v === '') return ''
+    const n = parseFloat(String(v))
     return Number.isNaN(n) ? '' : String(n)
+  }
+
+  const formatWeight = (w: string | number | undefined) => {
+    const s = formatNumber(w)
+    return s === '0' ? '' : s
   }
 
   const renderSetChips = (pe: PerformedExercise) => {
@@ -321,7 +326,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   hasWeight && styles.chipRepsAdjacent,
                 ]}
               >
-                <Text style={styles.chipRepsText}>{s.reps}</Text>
+                <Text style={styles.chipRepsText}>{formatNumber(s.reps)}</Text>
               </View>
               {hasWeight ? (
                 <View style={[styles.chipInner, styles.chipWeight]}>
