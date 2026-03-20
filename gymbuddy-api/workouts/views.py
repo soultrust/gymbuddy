@@ -211,7 +211,9 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
 
     def _list_exercises(self, session):
         exercises = session.exercises.all().select_related("exercise").prefetch_related("sets")
-        serializer = PerformedExerciseSerializer(exercises, many=True)
+        serializer = PerformedExerciseSerializer(
+            exercises, many=True, context={"request": self.request}
+        )
         return Response(serializer.data)
 
     @action(detail=True, methods=["get", "post"])
