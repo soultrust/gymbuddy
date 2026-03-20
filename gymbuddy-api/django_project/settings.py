@@ -22,18 +22,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-=a=k71g%a9+r%kltrnqz58otghv!#jzo7-iz21$-^*%xloru-*"
+# In production, set SECRET_KEY via environment variable.
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "django-insecure-=a=k71g%a9+r%kltrnqz58otghv!#jzo7-iz21$-^*%xloru-*",
+)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "10.0.2.2",  # Android emulator (host machine)
-    "*",  # Allow any host in dev (physical device uses your LAN IP)
-]
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,10.0.2.2").split(",")
+if DEBUG:
+    ALLOWED_HOSTS.append("*")
 
 # Required for Django 4.0+ when serving over HTTPS (e.g. Cloud Run).
 # Admin login and other POSTs will otherwise get "CSRF verification failed".
@@ -54,7 +53,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://soultrust-gymbuddy.firebaseapp.com",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 # Application definition
 
 INSTALLED_APPS = [

@@ -114,3 +114,14 @@ class UserExerciseNote(models.Model):
     class Meta:
         unique_together = ("user", "exercise")
         ordering = ["-updated_at"]
+
+    @classmethod
+    def clear_for(cls, user, exercise_id):
+        """Delete the note so it only shows once (the next time the exercise is done)."""
+        cls.objects.filter(user=user, exercise_id=exercise_id).delete()
+
+    @classmethod
+    def clear_for_exercises(cls, user, exercise_ids):
+        """Bulk-clear notes for multiple exercises at once."""
+        if exercise_ids:
+            cls.objects.filter(user=user, exercise_id__in=exercise_ids).delete()

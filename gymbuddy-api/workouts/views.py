@@ -1,9 +1,5 @@
 # workouts/views.py
 # pyright: reportUnreachable=false
-import os
-
-from django.conf import settings
-from django.http import JsonResponse
 from rest_framework import viewsets, status
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import action
@@ -24,23 +20,6 @@ from .serializers import (
 )
 
 
-def debug_db(request):
-    """Temporary: report which DB the running process is using. Remove after testing."""
-    db = settings.DATABASES["default"]
-    info = {
-        "engine": db["ENGINE"],
-        "name": db.get("NAME", "N/A"),  # database name (gymbuddy, postgres, or sqlite path)
-        "has_database_url": bool(os.environ.get("DATABASE_URL")),
-    }
-    try:
-        from accounts.models import User
-        info["user_count"] = User.objects.count()
-        info["staff_count"] = User.objects.filter(is_staff=True).count()
-    except Exception as e:
-        info["user_count_error"] = str(e)
-    return JsonResponse(info)
-
-
 class ExerciseViewSet(viewsets.ReadOnlyModelViewSet):
     """Master list of exercise types (read-only)."""
 
@@ -56,7 +35,9 @@ class ProgramViewSet(viewsets.ModelViewSet):
     queryset = Program.objects.all()
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+        return self.queryset.filter(user=self.request.user).prefetch_related(
+            "workout_sessions"
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -67,7 +48,13 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     queryset = Session.objects.all()
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+        return (
+            self.queryset.filter(user=self.request.user)
+            .prefetch_related(
+                "exercises__exercise",
+                "exercises__sets",
+            )
+        )
 
     def _copy_session_as_template(self, new_session, template_session_id):
         """Copy exercises and sets from template_session_id (must be user's) into new_session."""
@@ -80,6 +67,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
                 exercise=pe.exercise,
                 user_preferred_name=pe.user_preferred_name or "",
                 order=pe.order,
+                is_bodyweight=pe.is_bodyweight,
             )
             for s in pe.sets.all().order_by("order"):
                 SetEntry.objects.create(
@@ -105,7 +93,6 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         new_session = serializer.instance
         if template_session_id is not None:
             self._copy_session_as_template(new_session, template_session_id)
-            # Re-fetch so response includes the copied exercises
             new_session = self.get_queryset().get(pk=new_session.pk)
             serializer = self.get_serializer(new_session)
         headers = self.get_success_headers(serializer.data)
@@ -122,16 +109,10 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save()
         session = serializer.instance
-        # Clear "note for next time" for every exercise in this workout so the note
-        # only appears on the next time the exercise is done, then disappears.
         exercise_ids = list(
             session.exercises.values_list("exercise_id", flat=True).distinct()
         )
-        if exercise_ids:
-            UserExerciseNote.objects.filter(
-                user=session.user_id,
-                exercise_id__in=exercise_ids,
-            ).delete()
+        UserExerciseNote.clear_for_exercises(session.user_id, exercise_ids)
 
     @action(detail=False, methods=["get"])
     def user_exercises(self, request):
@@ -186,7 +167,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         last = self.get_queryset().order_by("-date").first()
         if not last:
             return Response([])
-        exercises = last.exercises.all()
+        exercises = last.exercises.all().select_related("exercise").prefetch_related("sets")
         serializer = TemplateExerciseSerializer(exercises, many=True)
         return Response(serializer.data)
 
@@ -202,7 +183,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         )
         if not previous:
             return Response([])
-        exercises = previous.exercises.all()
+        exercises = previous.exercises.all().select_related("exercise").prefetch_related("sets")
         serializer = TemplateExerciseSerializer(exercises, many=True)
         return Response(serializer.data)
 
@@ -216,8 +197,9 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
                 if isinstance(exercise_name, (list, tuple))
                 else exercise_name
             )
+            name_str = str(name).strip()[:100]
             exercise, _ = Exercise.objects.get_or_create(
-                name=str(name).strip(),
+                name=name_str,
                 defaults={"description": ""},
             )
             data["exercise"] = exercise.id
@@ -228,7 +210,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def _list_exercises(self, session):
-        exercises = session.exercises.all()
+        exercises = session.exercises.all().select_related("exercise").prefetch_related("sets")
         serializer = PerformedExerciseSerializer(exercises, many=True)
         return Response(serializer.data)
 
@@ -245,18 +227,18 @@ class PerformedExerciseViewSet(viewsets.ModelViewSet):
     serializer_class = PerformedExerciseSerializer
 
     def get_queryset(self):
-        return PerformedExercise.objects.filter(session__user=self.request.user)
+        return (
+            PerformedExercise.objects.filter(session__user=self.request.user)
+            .select_related("exercise")
+            .prefetch_related("sets")
+        )
 
     def _add_set(self, exercise, request):
         serializer = SetEntrySerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(performed_exercise=exercise)
-        # Clear "note for next time" so it only showed this once (next time they did the exercise).
-        UserExerciseNote.objects.filter(
-            user=request.user,
-            exercise=exercise.exercise,
-        ).delete()
+        UserExerciseNote.clear_for(request.user, exercise.exercise_id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
@@ -286,32 +268,29 @@ class SetEntryViewSet(
     queryset = SetEntry.objects.all()
 
     def get_queryset(self):
-        return self.queryset.filter(performed_exercise__session__user=self.request.user)
+        return self.queryset.filter(
+            performed_exercise__session__user=self.request.user
+        ).select_related("performed_exercise__exercise")
 
     def perform_update(self, serializer):
         serializer.save()
-        # Clear "note for next time" for this exercise so it only showed once.
         instance = serializer.instance
-        UserExerciseNote.objects.filter(
-            user=self.request.user,
-            exercise_id=instance.performed_exercise.exercise_id,
-        ).delete()
+        UserExerciseNote.clear_for(
+            self.request.user, instance.performed_exercise.exercise_id
+        )
 
     def perform_destroy(self, instance):
         performed_exercise_id = instance.performed_exercise_id
         instance.delete()
-        # Renumber remaining sets to 1, 2, 3, ... (two-phase to avoid unique constraint)
         remaining = list(
             SetEntry.objects.filter(performed_exercise_id=performed_exercise_id).order_by("id")
         )
         if not remaining:
             return
-        # Phase 1: move all orders to a high offset so 1,2,3,... are free
         offset = 1000
         for set_entry in remaining:
             set_entry.order = offset + set_entry.order
             set_entry.save(update_fields=["order"])
-        # Phase 2: assign 1, 2, 3, ...
         for order, set_entry in enumerate(remaining, start=1):
             set_entry.order = order
             set_entry.save(update_fields=["order"])

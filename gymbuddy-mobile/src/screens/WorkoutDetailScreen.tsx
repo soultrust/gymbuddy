@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Keyboard,
@@ -15,72 +14,21 @@ import {
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import Svg, { Path } from 'react-native-svg'
 
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
-
-type Workout = {
-  id: number
-  date: string
-  date_display?: string
-  name: string
-  notes: string
-  exercises: PerformedExercise[]
-}
-
-type PerformedExercise = {
-  id: number
-  exercise: { id: number; name: string }
-  user_preferred_name?: string
-  order: number
-  is_bodyweight?: boolean
-  sets: SetEntry[]
-  note_for_next_time?: string
-}
-
-type SetEntry = {
-  id: number
-  order: number
-  reps: number
-  weight?: string | number
-  notes?: string
-}
-
-type TemplateExercise = {
-  exercise: { id: number; name: string }
-  user_preferred_name?: string
-  order: number
-  last_sets: SetEntry[]
-}
-
-/** Play-style arrow for stepper: right = increase, left = decrease. */
-function StepperArrowIcon({
-  direction,
-  color,
-  size = 18,
-}: {
-  direction: 'left' | 'right'
-  color: string
-  size?: number
-}) {
-  const path =
-    'M21.415,12.554 L2.418,0.311 C1.291,-0.296 0,-0.233 0,1.946 L0,26.054 C0,28.046 1.385,28.36 2.418,27.689 L21.415,15.446 C22.197,14.647 22.197,13.353 21.415,12.554'
-  const flip = direction === 'left'
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="-1 -1 26 30"
-      style={[
-        { backgroundColor: 'transparent' },
-        flip ? { transform: [{ scaleX: -1 }] } : undefined,
-      ]}
-    >
-      <Path fill={color} d={path} />
-    </Svg>
-  )
-}
+import type {
+  Workout,
+  PerformedExercise,
+  SetEntry,
+  TemplateExercise,
+  TemplateSetEntry,
+} from '../types/workout'
+import { formatNumber, formatWeight, formatFullDate } from '../utils/format'
+import { setDecimalInput, parseReps, stepRepsValue } from '../utils/numberInput'
+import ArrowIcon from '../components/ArrowIcon'
+import LoadingSpinner from '../components/LoadingSpinner'
+import { colors } from '../theme/colors'
 
 export default function WorkoutDetailScreen({
   route,
@@ -205,61 +153,17 @@ export default function WorkoutDetailScreen({
   const getLastSets = (exerciseId: number) =>
     previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? []
 
-  const setWeightDecimal = (setter: (v: string) => void, text: string) => {
-    const cleaned = text.replace(/[^0-9.]/g, '')
-    const [whole = '', ...rest] = cleaned.split('.')
-    if (rest.length === 0) {
-      setter(whole)
-      return
-    }
-    const fractional = rest.join('').slice(0, 2)
-    const normalizedWhole = whole.length > 0 ? whole : '0'
-    setter(`${normalizedWhole}.${fractional}`)
-  }
+  const setWeightDecimal = (setter: (v: string) => void, text: string) =>
+    setDecimalInput(setter, text)
 
-  const setRepsDecimal = (setter: (v: string) => void, text: string) => {
-    const cleaned = text.replace(/[^0-9.]/g, '')
-    const [whole = '', ...rest] = cleaned.split('.')
-    if (rest.length === 0) {
-      setter(whole)
-      return
-    }
-    const fractional = rest.join('').slice(0, 2)
-    const normalizedWhole = whole.length > 0 ? whole : '0'
-    setter(`${normalizedWhole}.${fractional}`)
-  }
+  const setRepsDecimal = (setter: (v: string) => void, text: string) =>
+    setDecimalInput(setter, text)
 
-  const parseReps = (value: string) => {
-    const n = parseFloat(value)
-    if (Number.isNaN(n) || n < 0) return null
-    return n
-  }
-
-  const stepRepsValue = (value: string, direction: 'prev' | 'next') => {
-    const n = parseFloat(value)
-    if (Number.isNaN(n) || n < 0) return direction === 'prev' ? 0 : 1
-    if (Number.isInteger(n)) {
-      return direction === 'prev' ? Math.max(0, n - 1) : n + 1
-    }
-    return direction === 'prev' ? Math.floor(n) : Math.ceil(n)
-  }
-
-  const formatNumber = (v: string | number | undefined) => {
-    if (v == null || v === '') return ''
-    const n = parseFloat(String(v))
-    return Number.isNaN(n) ? '' : String(n)
-  }
-
-  const formatWeight = (w: string | number | undefined) => {
-    const s = formatNumber(w)
-    return s === '0' ? '' : s
-  }
-
-  const formatLastSets = (sets: SetEntry[]) => {
+  const formatLastSets = (sets: (SetEntry | TemplateSetEntry)[]) => {
     if (sets.length === 0) return null
     return sets
       .map((s) => {
-        const w = formatWeight(s.weight)
+        const w = formatWeight(s.weight ?? undefined)
         return `${formatNumber(s.reps)} reps${w ? ` @ ${w}lbs` : ''}`
       })
       .join(', ')
@@ -532,7 +436,7 @@ export default function WorkoutDetailScreen({
           : 1
 
       let userPreferredName = ''
-      let lastSets: SetEntry[] = []
+      let lastSets: TemplateSetEntry[] = []
       try {
         const last = await apiRequest<TemplateExercise>(
           `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,
@@ -586,45 +490,8 @@ export default function WorkoutDetailScreen({
     }
   }
 
-  /** Format as MM/DD (e.g. 03/17) - no year */
-  const formatMonthDay = (d: string) => {
-    const date = new Date(d)
-    const mm = String(date.getMonth() + 1).padStart(2, '0')
-    const dd = String(date.getDate()).padStart(2, '0')
-    return `${mm}/${dd}`
-  }
-
-  /** Format as "FRI Feb 13, 2006" */
-  const formatFullDate = (d: string) => {
-    const date = new Date(d)
-    const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ]
-    const weekday = weekdays[date.getDay()]
-    const month = months[date.getMonth()]
-    const day = date.getDate()
-    const year = date.getFullYear()
-    return `${weekday} ${month} ${day}, ${year}`
-  }
-
   if (loading || !workout) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#d97706" />
-      </View>
-    )
+    return <LoadingSpinner />
   }
 
   return (
@@ -780,7 +647,7 @@ export default function WorkoutDetailScreen({
                                     )
                                   }}
                                 >
-                                  <StepperArrowIcon
+                                  <ArrowIcon
                                     direction="left"
                                     color="#44403c"
                                   />
@@ -811,7 +678,7 @@ export default function WorkoutDetailScreen({
                                     )
                                   }}
                                 >
-                                  <StepperArrowIcon
+                                  <ArrowIcon
                                     direction="right"
                                     color="#44403c"
                                   />
@@ -894,7 +761,7 @@ export default function WorkoutDetailScreen({
                                     setNewSetReps(String(v))
                                   }}
                                 >
-                                  <StepperArrowIcon
+                                  <ArrowIcon
                                     direction="left"
                                     color="#1c1917"
                                   />
@@ -918,7 +785,7 @@ export default function WorkoutDetailScreen({
                                     setNewSetReps(String(v))
                                   }}
                                 >
-                                  <StepperArrowIcon
+                                  <ArrowIcon
                                     direction="right"
                                     color="#1c1917"
                                   />
@@ -1134,12 +1001,7 @@ export default function WorkoutDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff4e6' }, // #c9a882
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.cream },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

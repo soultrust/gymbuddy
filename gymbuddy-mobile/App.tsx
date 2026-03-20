@@ -1,5 +1,4 @@
 import { StatusBar } from 'expo-status-bar'
-import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
@@ -7,6 +6,7 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext'
 import LoginScreen from './src/screens/LoginScreen'
 import WorkoutsScreen from './src/screens/WorkoutsScreen'
 import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen'
+import LoadingSpinner from './src/components/LoadingSpinner'
 
 const Stack = createNativeStackNavigator()
 
@@ -15,11 +15,7 @@ function AppNavigator() {
   const isLoggedIn = !!token
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#d97706" />
-      </View>
-    )
+    return <LoadingSpinner />
   }
 
   return (
@@ -50,11 +46,3 @@ export default function App() {
   )
 }
 
-const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#c9a882',
-  },
-})

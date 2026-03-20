@@ -14,83 +14,24 @@ import {
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import Svg, { Path } from 'react-native-svg'
 
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
-
-type TemplateSetEntry = {
-  order: number
-  reps: number
-  weight?: string | number | null
-  notes?: string
-}
-
-type TemplateExercise = {
-  exercise: { id: number; name: string }
-  user_preferred_name?: string
-  order: number
-  last_sets?: TemplateSetEntry[]
-}
+import type {
+  Workout,
+  PerformedExercise,
+  TemplateExercise,
+  TemplateSource,
+} from '../types/workout'
+import { formatNumber, formatWeight, formatMonthDay, formatSessionDate } from '../utils/format'
+import ArrowIcon from '../components/ArrowIcon'
+import LoadingSpinner from '../components/LoadingSpinner'
+import { colors } from '../theme/colors'
 
 type NavProps = {
   navigation: {
     navigate: (screen: string, params: { workoutId: number }) => void
   }
-}
-
-type SetEntry = {
-  order: number
-  reps: number
-  weight?: string | number
-  notes?: string
-}
-
-type PerformedExercise = {
-  id?: number
-  exercise: { id: number; name: string }
-  user_preferred_name?: string
-  order: number
-  sets: SetEntry[]
-}
-
-type Workout = {
-  id: number
-  date: string
-  date_display?: string
-  name: string
-  notes: string
-  exercises: PerformedExercise[]
-}
-
-type TemplateSource = 'previous' | 'another' | 'none'
-
-/** Play-style arrow (right-pointing). Set direction="left" for previous. */
-function TableArrowIcon({
-  direction,
-  color,
-  size = 20,
-}: {
-  direction: 'left' | 'right'
-  color: string
-  size?: number
-}) {
-  const path =
-    'M21.415,12.554 L2.418,0.311 C1.291,-0.296 0,-0.233 0,1.946 L0,26.054 C0,28.046 1.385,28.36 2.418,27.689 L21.415,15.446 C22.197,14.647 22.197,13.353 21.415,12.554'
-  const flip = direction === 'left'
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="-1 -1 26 30"
-      style={[
-        { backgroundColor: 'transparent' },
-        flip ? { transform: [{ scaleX: -1 }] } : undefined,
-      ]}
-    >
-      <Path fill={color} d={path} />
-    </Svg>
-  )
 }
 
 export default function WorkoutsScreen({ navigation }: NavProps) {
@@ -253,23 +194,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     await logout()
   }
 
-  /** Format as M/DD (e.g. 3/17) for workout list - no year, no leading zero on month */
-  const formatMonthDay = (d: string) => {
-    const date = new Date(d)
-    const mm = String(date.getMonth() + 1)
-    const dd = String(date.getDate()).padStart(2, '0')
-    return `${mm}/${dd}`
-  }
-
-  /** Format as "Sat, Feb 14, 2026" for session dropdown */
-  const formatSessionDate = (d: string) =>
-    new Date(d).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-
   // Build ordered list of exercises (by first appearance across workouts)
   const exerciseColumns = useMemo(() => {
     const map = new Map<number, string>()
@@ -298,17 +222,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
 
   const getExerciseForWorkout = (workout: Workout, exerciseId: number) =>
     (workout.exercises || []).find((pe) => pe.exercise?.id === exerciseId)
-
-  const formatNumber = (v: string | number | undefined) => {
-    if (v == null || v === '') return ''
-    const n = parseFloat(String(v))
-    return Number.isNaN(n) ? '' : String(n)
-  }
-
-  const formatWeight = (w: string | number | undefined) => {
-    const s = formatNumber(w)
-    return s === '0' ? '' : s
-  }
 
   const renderSetChips = (pe: PerformedExercise) => {
     const sets = pe.sets || []
@@ -341,11 +254,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   }
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#d97706" />
-      </View>
-    )
+    return <LoadingSpinner />
   }
 
   return (
@@ -666,7 +575,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   disabled={!canGoPrev}
                   style={[styles.arrowBtn, !canGoPrev && styles.arrowDisabled]}
                 >
-                  <TableArrowIcon
+                  <ArrowIcon
                     direction="left"
                     color={canGoPrev ? '#fff4e6' : 'rgb(255 255 255 / 0.3)'}
                   />
@@ -690,7 +599,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   disabled={!canGoNext}
                   style={[styles.arrowBtn, !canGoNext && styles.arrowDisabled]}
                 >
-                  <TableArrowIcon
+                  <ArrowIcon
                     direction="right"
                     color={canGoNext ? '#fff4e6' : 'rgb(255 255 255 / 0.3)'} //'#a8a29e'
                   />
@@ -744,11 +653,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#c9a882',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

@@ -22,6 +22,21 @@ class SetEntrySerializer(serializers.ModelSerializer):
         model = SetEntry
         fields = ["id", "order", "reps", "weight", "notes"]
 
+    def validate_reps(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("Reps must be >= 0.")
+        return value
+
+    def validate_weight(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("Weight must be >= 0.")
+        return value
+
+    def validate_order(self, value):
+        if value is not None and value < 1:
+            raise serializers.ValidationError("Order must be >= 1.")
+        return value
+
 
 class PerformedExerciseSerializer(serializers.ModelSerializer):
     sets = SetEntrySerializer(many=True, read_only=True)
@@ -35,6 +50,9 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user:
             return ""
+        # Use prefetched notes if available (avoids N+1)
+        if hasattr(instance, "_prefetched_note"):
+            return instance._prefetched_note
         note_obj = UserExerciseNote.objects.filter(
             user=request.user, exercise=instance.exercise
         ).first()

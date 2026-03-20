@@ -1,36 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/api";
-
-type Workout = {
-  id: number;
-  date: string;
-  name: string;
-  notes: string;
-  exercises: PerformedExercise[];
-};
-
-type PerformedExercise = {
-  id?: number;
-  exercise: { id: number; name: string };
-  user_preferred_name?: string;
-  order: number;
-  sets: SetEntry[];
-};
-
-type SetEntry = {
-  order: number;
-  reps: number;
-  weight?: string | number;
-  notes?: string;
-};
-
-type TemplateExercise = {
-  exercise: { id: number; name: string };
-  user_preferred_name?: string;
-  order: number;
-  last_sets: SetEntry[];
-};
+import type { Workout, PerformedExercise, SetEntry, TemplateExercise } from "@/types/workout";
+import { formatDate } from "@/utils/format";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -74,14 +46,6 @@ export default function WorkoutsList({
   useEffect(() => {
     fetchWorkouts().finally(() => setLoading(false));
   }, [fetchWorkouts]);
-
-  /** MM/DD (e.g. 03/17) for list - matches mobile */
-  const formatDate = (d: string) => {
-    const date = new Date(d);
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    return `${mm}/${dd}`;
-  };
 
   useEffect(() => {
     if (showCreateForm) {
