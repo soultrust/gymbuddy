@@ -47,6 +47,7 @@ export default function WorkoutDetailScreen({
     { id: number; name: string }[]
   >([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [newExerciseName, setNewExerciseName] = useState('')
   const [newExerciseBodyweight, setNewExerciseBodyweight] = useState(false)
   const [addingExercise, setAddingExercise] = useState(false)
@@ -84,6 +85,7 @@ export default function WorkoutDetailScreen({
       const data = await apiRequest<Workout>(`/workouts/${workoutId}/`, {
         token,
       })
+      setFetchError(null)
       setWorkout((prev) => {
         if (!prev?.exercises?.length || !data.exercises) return data
         const exercises = data.exercises.map((e) => {
@@ -94,7 +96,8 @@ export default function WorkoutDetailScreen({
         })
         return { ...data, exercises }
       })
-    } catch {
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : 'Could not load workout.')
       setWorkout(null)
     }
   }, [token, workoutId])
@@ -203,8 +206,8 @@ export default function WorkoutDetailScreen({
       setNewSetReps('1')
       setNewSetWeight('')
       await fetchWorkout()
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not add set', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -227,8 +230,8 @@ export default function WorkoutDetailScreen({
       })
       if (exitEdit) setEditingSetId(null)
       await fetchWorkout()
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not save set', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -256,8 +259,8 @@ export default function WorkoutDetailScreen({
       setEditingDate(false)
       setEditingDateValue(null)
       await fetchWorkout()
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not save date', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -270,8 +273,8 @@ export default function WorkoutDetailScreen({
       })
       setEditingSetId(null)
       await fetchWorkout()
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not delete set', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -321,8 +324,8 @@ export default function WorkoutDetailScreen({
         token,
       })
       await fetchWorkout()
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not delete exercise', e instanceof Error ? e.message : 'Please try again.')
     }
   }
 
@@ -362,8 +365,8 @@ export default function WorkoutDetailScreen({
                 token,
               })
               navigation.goBack()
-            } catch {
-              // ignore
+            } catch (e) {
+              Alert.alert('Could not delete workout', e instanceof Error ? e.message : 'Please try again.')
             }
           },
         },
@@ -418,8 +421,8 @@ export default function WorkoutDetailScreen({
             : fresh.exercises
         setWorkout({ ...fresh, exercises: exercises ?? [] })
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not add exercise', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setAddingExercise(false)
     }
@@ -483,15 +486,46 @@ export default function WorkoutDetailScreen({
         })
       }
       await fetchWorkout()
-    } catch {
-      // ignore
+    } catch (e) {
+      Alert.alert('Could not add exercise', e instanceof Error ? e.message : 'Please try again.')
     } finally {
       setAddingExercise(false)
     }
   }
 
-  if (loading || !workout) {
+  if (loading) {
     return <LoadingSpinner />
+  }
+
+  if (fetchError || !workout) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backBtn}>← Back</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            {fetchError ?? 'Workout not found.'}
+          </Text>
+          <TouchableOpacity
+            style={styles.errorRetryBtn}
+            onPress={() => {
+              setFetchError(null)
+              setLoading(true)
+              Promise.all([
+                fetchWorkout(),
+                fetchPrevious(),
+                fetchUserExercises(),
+              ]).finally(() => setLoading(false))
+            }}
+          >
+            <Text style={styles.errorRetryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
   }
 
   return (
@@ -1002,6 +1036,29 @@ export default function WorkoutDetailScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.cream },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    gap: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#78716c',
+    textAlign: 'center',
+  },
+  errorRetryBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    backgroundColor: '#f59e0b',
+    borderRadius: 10,
+  },
+  errorRetryText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -112,6 +112,8 @@ export default function WorkoutDetail({
   const [previousExercises, setPreviousExercises] = useState<TemplateExercise[]>([]);
   const [userExercises, setUserExercises] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
   const [newExerciseName, setNewExerciseName] = useState("");
   const [addingExercise, setAddingExercise] = useState(false);
 
@@ -119,8 +121,10 @@ export default function WorkoutDetail({
     if (!token) return;
     try {
       const data = await apiRequest<Workout>(`/workouts/${workoutId}/`, { token });
+      setFetchError(null);
       setWorkout(data);
-    } catch {
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : "Could not load workout.");
       setWorkout(null);
     }
   }, [token, workoutId]);
@@ -199,8 +203,8 @@ export default function WorkoutDetail({
       setNewSetReps("10");
       setNewSetWeight("");
       await fetchWorkout();
-    } catch {
-      // ignore
+    } catch (e) {
+      setMutationError(e instanceof Error ? e.message : "Could not add set.");
     }
   };
 
@@ -220,8 +224,8 @@ export default function WorkoutDetail({
       });
       setEditingSetId(null);
       await fetchWorkout();
-    } catch {
-      // ignore
+    } catch (e) {
+      setMutationError(e instanceof Error ? e.message : "Could not save set.");
     }
   };
 
@@ -234,8 +238,8 @@ export default function WorkoutDetail({
       });
       setEditingSetId(null);
       await fetchWorkout();
-    } catch {
-      // ignore
+    } catch (e) {
+      setMutationError(e instanceof Error ? e.message : "Could not delete set.");
     }
   };
 
@@ -250,8 +254,8 @@ export default function WorkoutDetail({
       });
       setEditingExerciseId(null);
       await fetchWorkout();
-    } catch {
-      // ignore
+    } catch (e) {
+      setMutationError(e instanceof Error ? e.message : "Could not save exercise name.");
     }
   };
 
@@ -273,8 +277,8 @@ export default function WorkoutDetail({
       });
       setNewExerciseName("");
       await fetchWorkout();
-    } catch {
-      // ignore
+    } catch (e) {
+      setMutationError(e instanceof Error ? e.message : "Could not add exercise.");
     } finally {
       setAddingExercise(false);
     }
@@ -329,17 +333,47 @@ export default function WorkoutDetail({
         });
       }
       await fetchWorkout();
-    } catch {
-      // ignore
+    } catch (e) {
+      setMutationError(e instanceof Error ? e.message : "Could not add exercise.");
     } finally {
       setAddingExercise(false);
     }
   };
 
-  if (loading || !workout) {
+  if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (fetchError || !workout) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
+        <p className="text-stone-500 text-center">{fetchError ?? "Workout not found."}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 text-sm text-stone-600 hover:text-stone-800 font-medium"
+          >
+            ← Back
+          </button>
+          {fetchError && (
+            <button
+              onClick={() => {
+                setFetchError(null);
+                setLoading(true);
+                Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises()]).finally(() =>
+                  setLoading(false)
+                );
+              }}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -361,6 +395,18 @@ export default function WorkoutDetail({
       </header>
 
       <main className="flex-1 overflow-auto p-6 bg-stone-50">
+        {mutationError && (
+          <div className="mb-4 flex items-center justify-between gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            <span>{mutationError}</span>
+            <button
+              onClick={() => setMutationError(null)}
+              className="text-red-400 hover:text-red-600 font-bold text-lg leading-none"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
         {workout.exercises.length === 0 ? (
           <p className="text-stone-500 text-center py-8">No exercises yet. Add one below.</p>
         ) : (
