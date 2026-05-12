@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react'
+import React from 'react'
 import {
   Alert,
   Animated,
-  Keyboard,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,18 +16,12 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../api/client'
-import type {
-  Workout,
-  PerformedExercise,
-  SetEntry,
-  TemplateExercise,
-  TemplateSetEntry,
-} from '../types/workout'
-import { formatNumber, formatWeight, formatFullDate } from '../utils/format'
-import { setDecimalInput, parseReps, stepRepsValue } from '../utils/numberInput'
+import { formatWeight, formatFullDate, formatNumber } from '../utils/format'
+import { stepRepsValue } from '../utils/numberInput'
 import ArrowIcon from '../components/ArrowIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { colors } from '../theme/colors'
+import { useWorkoutDetail } from '../hooks/useWorkoutDetail'
 
 export default function WorkoutDetailScreen({
   route,
@@ -39,459 +32,55 @@ export default function WorkoutDetailScreen({
 }) {
   const { workoutId } = route.params
   const { token } = useAuth()
-  const [workout, setWorkout] = useState<Workout | null>(null)
-  const [previousExercises, setPreviousExercises] = useState<
-    TemplateExercise[]
-  >([])
-  const [userExercises, setUserExercises] = useState<
-    { id: number; name: string }[]
-  >([])
-  const [loading, setLoading] = useState(true)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [newExerciseName, setNewExerciseName] = useState('')
-  const [newExerciseBodyweight, setNewExerciseBodyweight] = useState(false)
-  const [addingExercise, setAddingExercise] = useState(false)
-  const [addingSetFor, setAddingSetFor] = useState<number | null>(null)
-  const [newSetReps, setNewSetReps] = useState('1')
-  const [newSetWeight, setNewSetWeight] = useState('')
-  const [editingSetId, setEditingSetId] = useState<number | null>(null)
-  const [editingSetReps, setEditingSetReps] = useState('')
-  const [editingSetWeight, setEditingSetWeight] = useState('')
-  const [editingDate, setEditingDate] = useState(false)
-  const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
-  const [expandedNotesFor, setExpandedNotesFor] = useState<number | null>(null)
-  const [exerciseNotes, setExerciseNotes] = useState<
-    Record<number, { todayNotes: string; nextTimeNote: string }>
-  >({})
-  const fadeAnim = useRef(new Animated.Value(0)).current
 
-  const getNotesFor = (peId: number) =>
-    exerciseNotes[peId] ?? { todayNotes: '', nextTimeNote: '' }
-  const setNotesFor = (
-    peId: number,
-    updater: (prev: { todayNotes: string; nextTimeNote: string }) => {
-      todayNotes: string
-      nextTimeNote: string
-    },
-  ) =>
-    setExerciseNotes((prev) => ({
-      ...prev,
-      [peId]: updater(prev[peId] ?? { todayNotes: '', nextTimeNote: '' }),
-    }))
-
-  const fetchWorkout = useCallback(async () => {
-    if (!token) return
-    try {
-      const data = await apiRequest<Workout>(`/workouts/${workoutId}/`, {
-        token,
-      })
-      setFetchError(null)
-      setWorkout((prev) => {
-        if (!prev?.exercises?.length || !data.exercises) return data
-        const exercises = data.exercises.map((e) => {
-          const prevEx = prev.exercises.find((p) => p.id === e.id)
-          if (prevEx?.is_bodyweight === true)
-            return { ...e, is_bodyweight: true }
-          return e
-        })
-        return { ...data, exercises }
-      })
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : 'Could not load workout.')
-      setWorkout(null)
-    }
-  }, [token, workoutId])
-
-  const fetchPrevious = useCallback(async () => {
-    if (!token) return
-    try {
-      const data = await apiRequest<TemplateExercise[]>(
-        `/workouts/${workoutId}/previous_exercises/`,
-        { token },
-      )
-      setPreviousExercises(Array.isArray(data) ? data : [])
-    } catch {
-      setPreviousExercises([])
-    }
-  }, [token, workoutId])
-
-  const fetchUserExercises = useCallback(async () => {
-    if (!token) return
-    try {
-      const data = await apiRequest<{ id: number; name: string }[]>(
-        `/workouts/user_exercises/`,
-        { token },
-      )
-      setUserExercises(Array.isArray(data) ? data : [])
-    } catch {
-      setUserExercises([])
-    }
-  }, [token])
-
-  useEffect(() => {
-    Promise.all([
-      fetchWorkout(),
-      fetchPrevious(),
-      fetchUserExercises(),
-    ]).finally(() => setLoading(false))
-  }, [fetchWorkout, fetchPrevious, fetchUserExercises])
-
-  useEffect(() => {
-    if (editingSetId !== null) {
-      // Reset to 0 and immediately animate to 1
-      fadeAnim.setValue(0)
-      // Small delay to ensure the component has rendered
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: false, // Try without native driver for opacity
-        }).start()
-      }, 50)
-    } else {
-      fadeAnim.setValue(0)
-    }
-  }, [editingSetId, fadeAnim])
-
-  const getLastSets = (exerciseId: number) =>
-    previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? []
-
-  const setWeightDecimal = (setter: (v: string) => void, text: string) =>
-    setDecimalInput(setter, text)
-
-  const setRepsDecimal = (setter: (v: string) => void, text: string) =>
-    setDecimalInput(setter, text)
-
-  const formatLastSets = (sets: (SetEntry | TemplateSetEntry)[]) => {
-    if (sets.length === 0) return null
-    return sets
-      .map((s) => {
-        const w = formatWeight(s.weight ?? undefined)
-        return `${formatNumber(s.reps)} reps${w ? ` @ ${w}lbs` : ''}`
-      })
-      .join(', ')
-  }
-
-  const handleAddSet = async (
-    performedExerciseId: number,
-    currentSets: SetEntry[],
-    keepAdding = false,
-  ) => {
-    if (!token || !workout) return
-    const nextOrder =
-      currentSets.length > 0
-        ? Math.max(...currentSets.map((s) => s.order)) + 1
-        : 1
-    const reps = parseReps(newSetReps)
-    if (reps == null) return
-    try {
-      const isBodyweight = workout.exercises.find(
-        (e) => e.id === performedExerciseId,
-      )?.is_bodyweight
-      await apiRequest(`/performed-exercises/${performedExerciseId}/sets/`, {
-        method: 'POST',
-        token,
-        body: {
-          order: nextOrder,
-          reps,
-          weight: isBodyweight
-            ? 0
-            : newSetWeight
-              ? parseFloat(newSetWeight)
-              : null,
-          notes: '',
-        },
-      })
-      if (!keepAdding) setAddingSetFor(null)
-      setNewSetReps('1')
-      setNewSetWeight('')
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not add set', e instanceof Error ? e.message : 'Please try again.')
-    }
-  }
-
-  const saveSetToApi = async (
-    set: SetEntry,
-    reps: number,
-    weight: string,
-    exitEdit = true,
-  ) => {
-    if (!token) return
-    if (isNaN(reps) || reps < 0) return
-    try {
-      await apiRequest(`/set-entries/${set.id}/`, {
-        method: 'PATCH',
-        token,
-        body: {
-          reps,
-          weight: weight ? parseFloat(weight) : null,
-        },
-      })
-      if (exitEdit) setEditingSetId(null)
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not save set', e instanceof Error ? e.message : 'Please try again.')
-    }
-  }
-
-  const handleSaveSet = async (set: SetEntry) => {
-    const reps = parseReps(editingSetReps)
-    if (reps == null) return
-    const pe = workout?.exercises.find((e) =>
-      e.sets.some((ss) => ss.id === set.id),
-    )
-    const weight = pe?.is_bodyweight ? '0' : editingSetWeight
-    await saveSetToApi(set, reps, weight, true)
-  }
-
-  const handleSaveDate = async (dateToSave?: Date) => {
-    if (!token || !workout) return
-    const date = dateToSave || editingDateValue
-    if (!date) return
-    try {
-      const dateISO = date.toISOString()
-      await apiRequest(`/workouts/${workoutId}/`, {
-        method: 'PATCH',
-        token,
-        body: { date: dateISO },
-      })
-      setEditingDate(false)
-      setEditingDateValue(null)
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not save date', e instanceof Error ? e.message : 'Please try again.')
-    }
-  }
-
-  const handleDeleteSet = async (set: SetEntry) => {
-    if (!token) return
-    try {
-      await apiRequest(`/set-entries/${set.id}/`, {
-        method: 'DELETE',
-        token,
-      })
-      setEditingSetId(null)
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not delete set', e instanceof Error ? e.message : 'Please try again.')
-    }
-  }
-
-  const dismissEditSet = () => {
-    if (!workout) return
-    if (addingSetFor !== null) {
-      const pe = workout.exercises.find((e) => e.id === addingSetFor)
-      if (pe) {
-        Keyboard.dismiss()
-        handleAddSet(addingSetFor, pe.sets)
-      }
-      setAddingSetFor(null)
-      return
-    }
-    if (editingSetId === null) return
-    for (const pe of workout.exercises) {
-      const set = pe.sets.find((se) => se.id === editingSetId)
-      if (set) {
-        Keyboard.dismiss()
-        handleSaveSet(set)
-        return
-      }
-    }
-    setEditingSetId(null)
-  }
-
-  const confirmDeleteSet = (set: SetEntry) => {
-    Alert.alert(
-      'Delete set',
-      'Are you sure you want to delete this set? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => handleDeleteSet(set),
-        },
-      ],
-    )
-  }
-
-  const handleDeleteExercise = async (pe: PerformedExercise) => {
-    if (!token) return
-    try {
-      await apiRequest(`/performed-exercises/${pe.id}/`, {
-        method: 'DELETE',
-        token,
-      })
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not delete exercise', e instanceof Error ? e.message : 'Please try again.')
-    }
-  }
-
-  const confirmDeleteExercise = (pe: PerformedExercise) => {
-    Alert.alert(
-      'Delete exercise',
-      'Are you sure you want to remove this exercise from the workout? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => handleDeleteExercise(pe),
-        },
-      ],
-    )
-  }
-
-  const handleDeleteWorkout = async () => {
-    if (!token || !workout) return
-
-    Alert.alert(
-      'Delete Workout',
-      'Are you sure you want to delete this workout? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiRequest(`/workouts/${workoutId}/`, {
-                method: 'DELETE',
-                token,
-              })
-              navigation.goBack()
-            } catch (e) {
-              Alert.alert('Could not delete workout', e instanceof Error ? e.message : 'Please try again.')
-            }
-          },
-        },
-      ],
-    )
-  }
-
-  const handleAddExercise = async () => {
-    if (!token || !newExerciseName.trim() || !workout) return
-    setAddingExercise(true)
-    const wasBodyweight = newExerciseBodyweight
-    try {
-      const exercises = workout.exercises ?? []
-      const nextOrder =
-        exercises.length > 0
-          ? Math.max(...exercises.map((e) => e.order)) + 1
-          : 1
-      const created = await apiRequest<PerformedExercise>(
-        `/workouts/${workoutId}/exercises/`,
-        {
-          method: 'POST',
-          token,
-          body: {
-            exercise_name: newExerciseName.trim(),
-            order: nextOrder,
-            user_preferred_name: '',
-            is_bodyweight: wasBodyweight,
-          },
-        },
-      )
-      setNewExerciseName('')
-      setNewExerciseBodyweight(false)
-      if (created) {
-        created.is_bodyweight = wasBodyweight
-        setWorkout((prev) => {
-          if (!prev) return prev
-          const next = [...(prev.exercises || []), created].sort(
-            (a, b) => a.order - b.order,
-          )
-          return { ...prev, exercises: next }
-        })
-      }
-      const fresh = await apiRequest<Workout>(`/workouts/${workoutId}/`, {
-        token,
-      }).catch(() => null)
-      if (fresh) {
-        const exercises =
-          created && wasBodyweight
-            ? (fresh.exercises?.map((e) =>
-                e.id === created.id ? { ...e, is_bodyweight: true } : e,
-              ) ?? fresh.exercises)
-            : fresh.exercises
-        setWorkout({ ...fresh, exercises: exercises ?? [] })
-      }
-    } catch (e) {
-      Alert.alert('Could not add exercise', e instanceof Error ? e.message : 'Please try again.')
-    } finally {
-      setAddingExercise(false)
-    }
-  }
-
-  const handleAddPastExercise = async (exerciseId: number) => {
-    if (!token || !workout) return
-    setAddingExercise(true)
-    try {
-      const exercises = workout.exercises ?? []
-      const nextOrder =
-        exercises.length > 0
-          ? Math.max(...exercises.map((e) => e.order)) + 1
-          : 1
-
-      let userPreferredName = ''
-      let lastSets: TemplateSetEntry[] = []
-      try {
-        const last = await apiRequest<TemplateExercise>(
-          `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,
-          { token },
-        )
-        if (last?.user_preferred_name)
-          userPreferredName = last.user_preferred_name
-        if (Array.isArray(last?.last_sets) && last.last_sets.length > 0)
-          lastSets = last.last_sets
-      } catch {
-        // No previous performance; add exercise with no sets
-      }
-
-      const created = await apiRequest<PerformedExercise>(
-        `/workouts/${workoutId}/exercises/`,
-        {
-          method: 'POST',
-          token,
-          body: {
-            exercise: exerciseId,
-            order: nextOrder,
-            user_preferred_name: userPreferredName,
-          },
-        },
-      )
-
-      for (let i = 0; i < lastSets.length; i++) {
-        const s = lastSets[i]
-        const reps =
-          typeof s.reps === 'number' ? s.reps : parseFloat(String(s.reps))
-        if (Number.isNaN(reps) || reps < 0) continue
-        await apiRequest(`/performed-exercises/${created.id}/sets/`, {
-          method: 'POST',
-          token,
-          body: {
-            order: i + 1,
-            reps,
-            weight:
-              s.weight != null && s.weight !== ''
-                ? parseFloat(String(s.weight))
-                : null,
-            notes: s.notes ?? '',
-          },
-        })
-      }
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not add exercise', e instanceof Error ? e.message : 'Please try again.')
-    } finally {
-      setAddingExercise(false)
-    }
-  }
+  const {
+    workout,
+    loading,
+    fetchError,
+    userExercises,
+    newExerciseName,
+    setNewExerciseName,
+    newExerciseBodyweight,
+    setNewExerciseBodyweight,
+    addingExercise,
+    addingSetFor,
+    setAddingSetFor,
+    newSetReps,
+    setNewSetReps,
+    newSetWeight,
+    setNewSetWeight,
+    editingSetId,
+    setEditingSetId,
+    editingSetReps,
+    setEditingSetReps,
+    editingSetWeight,
+    setEditingSetWeight,
+    editingDate,
+    setEditingDate,
+    editingDateValue,
+    setEditingDateValue,
+    expandedNotesFor,
+    setExpandedNotesFor,
+    getNotesFor,
+    setNotesFor,
+    fadeAnim,
+    getLastSets,
+    formatLastSets,
+    setWeightDecimal,
+    setRepsDecimal,
+    fetchWorkout,
+    handleAddSet,
+    saveSetToApi,
+    handleSaveSet,
+    handleSaveDate,
+    confirmDeleteSet,
+    confirmDeleteExercise,
+    handleDeleteWorkout,
+    handleAddExercise,
+    handleAddPastExercise,
+    dismissEditSet,
+    retry,
+  } = useWorkoutDetail(workoutId, token, navigation.goBack)
 
   if (loading) {
     return <LoadingSpinner />
@@ -506,21 +95,8 @@ export default function WorkoutDetailScreen({
           </TouchableOpacity>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>
-            {fetchError ?? 'Workout not found.'}
-          </Text>
-          <TouchableOpacity
-            style={styles.errorRetryBtn}
-            onPress={() => {
-              setFetchError(null)
-              setLoading(true)
-              Promise.all([
-                fetchWorkout(),
-                fetchPrevious(),
-                fetchUserExercises(),
-              ]).finally(() => setLoading(false))
-            }}
-          >
+          <Text style={styles.errorText}>{fetchError ?? 'Workout not found.'}</Text>
+          <TouchableOpacity style={styles.errorRetryBtn} onPress={retry}>
             <Text style={styles.errorRetryText}>Try again</Text>
           </TouchableOpacity>
         </View>
@@ -541,14 +117,10 @@ export default function WorkoutDetailScreen({
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(_event: unknown, selectedDate?: Date) => {
-                if (Platform.OS === 'android') {
-                  setEditingDate(false)
-                }
+                if (Platform.OS === 'android') setEditingDate(false)
                 if (selectedDate) {
                   setEditingDateValue(selectedDate)
-                  if (Platform.OS === 'android') {
-                    handleSaveDate(selectedDate)
-                  }
+                  if (Platform.OS === 'android') handleSaveDate(selectedDate)
                 }
               }}
             />
@@ -597,10 +169,7 @@ export default function WorkoutDetailScreen({
         )}
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentInner}
-      >
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
         <TouchableWithoutFeedback onPress={dismissEditSet}>
           <View>
             {workout.exercises.length === 0 ? (
@@ -621,20 +190,13 @@ export default function WorkoutDetailScreen({
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         style={{ padding: 2 }}
                       >
-                        <Ionicons
-                          name="close-outline"
-                          size={24}
-                          color="#fff7ed"
-                        />
+                        <Ionicons name="close-outline" size={24} color="#fff7ed" />
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardBodyWrapper}>
                       {pe.sets.map((s, index) =>
                         editingSetId === s.id ? (
-                          <TouchableWithoutFeedback
-                            key={s.id}
-                            onPress={() => {}}
-                          >
+                          <TouchableWithoutFeedback key={s.id} onPress={() => {}}>
                             <Animated.View
                               style={[
                                 styles.setRow,
@@ -645,12 +207,7 @@ export default function WorkoutDetailScreen({
                               <View style={styles.setLabelRow}>
                                 <TouchableOpacity
                                   onPress={() => confirmDeleteSet(s)}
-                                  hitSlop={{
-                                    top: 8,
-                                    bottom: 8,
-                                    left: 8,
-                                    right: 8,
-                                  }}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                   style={{ padding: 2 }}
                                 >
                                   <Ionicons
@@ -659,18 +216,13 @@ export default function WorkoutDetailScreen({
                                     color="#000"
                                   />
                                 </TouchableOpacity>
-                                <Text style={styles.setLabel}>
-                                  Set {index + 1}
-                                </Text>
+                                <Text style={styles.setLabel}>Set {index + 1}</Text>
                               </View>
                               <View style={styles.stepper}>
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v = stepRepsValue(
-                                      editingSetReps,
-                                      'prev',
-                                    )
+                                    const v = stepRepsValue(editingSetReps, 'prev')
                                     const next = String(v)
                                     setEditingSetReps(next)
                                     saveSetToApi(
@@ -681,10 +233,7 @@ export default function WorkoutDetailScreen({
                                     )
                                   }}
                                 >
-                                  <ArrowIcon
-                                    direction="left"
-                                    color="#44403c"
-                                  />
+                                  <ArrowIcon direction="left" color="#44403c" />
                                 </TouchableOpacity>
                                 <TextInput
                                   style={styles.stepperValue}
@@ -698,10 +247,7 @@ export default function WorkoutDetailScreen({
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
-                                    const v = stepRepsValue(
-                                      editingSetReps,
-                                      'next',
-                                    )
+                                    const v = stepRepsValue(editingSetReps, 'next')
                                     const next = String(v)
                                     setEditingSetReps(next)
                                     saveSetToApi(
@@ -712,10 +258,7 @@ export default function WorkoutDetailScreen({
                                     )
                                   }}
                                 >
-                                  <ArrowIcon
-                                    direction="right"
-                                    color="#44403c"
-                                  />
+                                  <ArrowIcon direction="right" color="#44403c" />
                                 </TouchableOpacity>
                               </View>
                               {!isBodyweight && (
@@ -737,9 +280,7 @@ export default function WorkoutDetailScreen({
                         ) : (
                           <View key={s.id} style={styles.setRow}>
                             <View style={styles.setLabelRow}>
-                              <Text style={styles.setLabel}>
-                                Set {index + 1}
-                              </Text>
+                              <Text style={styles.setLabel}>Set {index + 1}</Text>
                             </View>
                             <TouchableOpacity
                               style={styles.setValueTouchable}
@@ -767,6 +308,7 @@ export default function WorkoutDetailScreen({
                           </View>
                         ),
                       )}
+
                       <View style={styles.addSetNotesColumn}>
                         {addingSetFor === pe.id && (
                           <View
@@ -795,10 +337,7 @@ export default function WorkoutDetailScreen({
                                     setNewSetReps(String(v))
                                   }}
                                 >
-                                  <ArrowIcon
-                                    direction="left"
-                                    color="#1c1917"
-                                  />
+                                  <ArrowIcon direction="left" color="#1c1917" />
                                 </TouchableOpacity>
                                 <TextInput
                                   style={[
@@ -810,8 +349,7 @@ export default function WorkoutDetailScreen({
                                     setRepsDecimal(setNewSetReps, t)
                                   }
                                   keyboardType="decimal-pad"
-                                >
-                                </TextInput>
+                                />
                                 <TouchableOpacity
                                   style={styles.stepperBtn}
                                   onPress={() => {
@@ -819,10 +357,7 @@ export default function WorkoutDetailScreen({
                                     setNewSetReps(String(v))
                                   }}
                                 >
-                                  <ArrowIcon
-                                    direction="right"
-                                    color="#1c1917"
-                                  />
+                                  <ArrowIcon direction="right" color="#1c1917" />
                                 </TouchableOpacity>
                               </View>
                             </View>
@@ -847,8 +382,7 @@ export default function WorkoutDetailScreen({
                         <View
                           style={[
                             styles.addSetNotesRow,
-                            addingSetFor === pe.id &&
-                              styles.addSetNotesRowBelow,
+                            addingSetFor === pe.id && styles.addSetNotesRowBelow,
                           ]}
                         >
                           <TouchableOpacity
@@ -861,9 +395,7 @@ export default function WorkoutDetailScreen({
                               setAddingSetFor(pe.id)
                               const last = pe.sets[pe.sets.length - 1]
                               setNewSetReps('1')
-                              if (last) {
-                                setNewSetWeight(formatWeight(last.weight))
-                              }
+                              if (last) setNewSetWeight(formatWeight(last.weight))
                             }}
                           >
                             <Text style={styles.addSetLink}>+ Add set</Text>
@@ -932,11 +464,7 @@ export default function WorkoutDetailScreen({
                               try {
                                 await apiRequest(
                                   `/performed-exercises/${pe.id}/note_for_next_time/`,
-                                  {
-                                    method: 'POST',
-                                    body: { note },
-                                    token,
-                                  },
+                                  { method: 'POST', body: { note }, token },
                                 )
                                 setNotesFor(pe.id, (prev) => ({
                                   ...prev,
@@ -982,14 +510,13 @@ export default function WorkoutDetailScreen({
                       disabled={addingExercise}
                       style={styles.addPastExerciseItem}
                     >
-                      <Text style={styles.addPastExerciseItemText}>
-                        {ex.name}
-                      </Text>
+                      <Text style={styles.addPastExerciseItemText}>{ex.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
             )}
+
             <View style={[styles.addExerciseSection, styles.card]}>
               <Text style={styles.addPastExerciseLabel}>Add New Exercise</Text>
               <TextInput
@@ -1043,22 +570,14 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 16,
   },
-  errorText: {
-    fontSize: 16,
-    color: '#78716c',
-    textAlign: 'center',
-  },
+  errorText: { fontSize: 16, color: '#78716c', textAlign: 'center' },
   errorRetryBtn: {
     paddingVertical: 10,
     paddingHorizontal: 24,
     backgroundColor: '#f59e0b',
     borderRadius: 10,
   },
-  errorRetryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
+  errorRetryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1080,38 +599,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginRight: 16,
   },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1c1917',
-  },
-  deleteBtn: {
-    marginLeft: 16,
-    padding: 4,
-  },
-  dateEditContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  dateEditActions: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 16,
-  },
+  titleContainer: { flex: 1 },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#1c1917' },
+  deleteBtn: { marginLeft: 16, padding: 4 },
+  dateEditContainer: { flex: 1, alignItems: 'center' },
+  dateEditActions: { flexDirection: 'row', gap: 16, marginTop: 16 },
   dateEditBtn: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
     backgroundColor: '#e7e5e4',
   },
-  dateEditBtnText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1c1917',
-  },
+  dateEditBtnText: { fontSize: 16, fontWeight: '500', color: '#1c1917' },
   content: { flex: 1 },
   contentInner: { padding: 24, paddingBottom: 32, backgroundColor: '#c9a882' },
   empty: {
@@ -1137,24 +636,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#5A4A2F',
-    // marginHorizontal: -16,
-    // marginTop: -16,
-    // marginBottom: 12,
     paddingLeft: 16,
     paddingRight: 6,
     paddingVertical: 10,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff7ed',
-  },
-  lastText: {
-    fontSize: 14,
-    color: '#78716c',
-  },
+  exerciseName: { fontSize: 16, fontWeight: '600', color: '#fff7ed' },
+  lastText: { fontSize: 14, color: '#78716c' },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1173,33 +662,17 @@ const styles = StyleSheet.create({
     marginHorizontal: -11,
     marginBottom: 8,
   },
-  setLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  setLabel: {
-    fontSize: 18,
-    color: '#44403c',
-  },
+  setLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  setLabel: { fontSize: 18, color: '#44403c' },
   setValueTouchable: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  setRepsCentered: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  setInputCentered: {
-    textAlign: 'center',
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
+  setRepsCentered: { flex: 1, alignItems: 'center' },
+  setInputCentered: { textAlign: 'center' },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   stepperBtn: {
     width: 36,
     height: 36,
@@ -1214,10 +687,7 @@ const styles = StyleSheet.create({
     color: '#44403c',
     textAlign: 'center',
   },
-  setValue: {
-    fontSize: 18,
-    color: '#44403c',
-  },
+  setValue: { fontSize: 18, color: '#44403c' },
   setInput: {
     width: 56,
     borderWidth: 1,
@@ -1228,19 +698,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     backgroundColor: '#fff4e6',
   },
-  setEditRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  addSetNotesColumn: {
-    marginTop: 8,
-  },
-  addSetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+  setEditRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  addSetNotesColumn: { marginTop: 8 },
+  addSetRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addSetRowEditing: {
     backgroundColor: '#f59e0b',
     borderRadius: 8,
@@ -1248,25 +708,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginHorizontal: -11,
   },
-  addSetCancelBtn: {
-    padding: 4,
-  },
-  addSetLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1c1917',
-  },
+  addSetCancelBtn: { padding: 4 },
+  addSetLabel: { fontSize: 18, fontWeight: '600', color: '#1c1917' },
   addSetStepperCenter: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addSetInputEditing: {
-    backgroundColor: '#fff4e6',
-  },
-  addSetNotesRowBelow: {
-    marginTop: 8,
-  },
+  addSetInputEditing: { backgroundColor: '#fff4e6' },
+  addSetNotesRowBelow: { marginTop: 8 },
   inputSmall: {
     width: 60,
     borderWidth: 1,
@@ -1276,41 +726,20 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     fontSize: 14,
   },
-  addSetBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  addSetBtnText: {
-    color: '#d97706',
-    fontWeight: '600',
-    fontSize: 14,
-  },
+  addSetBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+  addSetBtnText: { color: '#d97706', fontWeight: '600', fontSize: 14 },
   cancelBtn: { paddingHorizontal: 8 },
   cancelBtnText: { color: '#78716c', fontSize: 14 },
-  addSetLink: {
-    marginTop: 0,
-    fontSize: 14,
-    color: '#d97706',
-    fontWeight: '600',
-  },
+  addSetLink: { marginTop: 0, fontSize: 14, color: '#d97706', fontWeight: '600' },
   addSetNotesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
-  notesLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  notesBellIcon: {
-    marginRight: 4,
-  },
-  notesLink: {
-    fontSize: 14,
-    color: '#d97706',
-    fontWeight: '600',
-  },
+  notesLinkRow: { flexDirection: 'row', alignItems: 'center' },
+  notesBellIcon: { marginRight: 4 },
+  notesLink: { fontSize: 14, color: '#d97706', fontWeight: '600' },
   cardBodyWrapper: {
     position: 'relative',
     backgroundColor: '#fff4e6',
@@ -1324,10 +753,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#fff4e6',
   },
-  notesPanel: {
-    marginTop: 0,
-    padding: 16,
-  },
+  notesPanel: { marginTop: 0, padding: 16 },
   notesFromLastTime: {
     marginBottom: 12,
     paddingVertical: 8,
@@ -1341,13 +767,8 @@ const styles = StyleSheet.create({
     color: '#78716c',
     marginBottom: 4,
   },
-  notesFromLastTimeText: {
-    fontSize: 14,
-    color: '#44403c',
-  },
-  notesSection: {
-    marginBottom: 12,
-  },
+  notesFromLastTimeText: { fontSize: 14, color: '#44403c' },
+  notesSection: { marginBottom: 12 },
   notesLabel: {
     fontSize: 13,
     fontWeight: '600',
@@ -1372,11 +793,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  notesDoneText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#d97706',
-  },
+  notesDoneText: { fontSize: 15, fontWeight: '600', color: '#d97706' },
   card: {
     padding: 16,
     borderRadius: 12,
@@ -1389,9 +806,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  addPastExerciseSection: {
-    marginTop: 24,
-  },
+  addPastExerciseSection: { marginTop: 24 },
   addPastExerciseLabel: {
     fontSize: 12,
     fontWeight: '600',
@@ -1399,14 +814,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
   },
-  addPastExerciseHint: {
-    fontWeight: '400',
-    color: '#a8a29e',
-    textTransform: 'none',
-  },
-  addPastExerciseList: {
-    maxHeight: 200,
-  },
+  addPastExerciseHint: { fontWeight: '400', color: '#a8a29e', textTransform: 'none' },
+  addPastExerciseList: { maxHeight: 200 },
   addPastExerciseItem: {
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -1414,14 +823,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffedd2',
     borderRadius: 8,
   },
-  addPastExerciseItemText: {
-    fontSize: 14,
-    color: '#44403c',
-    fontWeight: '500',
-  },
-  addExerciseSection: {
-    marginTop: 24,
-  },
+  addPastExerciseItemText: { fontSize: 14, color: '#44403c', fontWeight: '500' },
+  addExerciseSection: { marginTop: 24 },
   addExerciseInput: {
     borderWidth: 1,
     borderColor: '#d6d3d1',
@@ -1432,21 +835,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff4e6',
     marginTop: 8,
   },
-  addExerciseInputFull: {
-    width: '100%',
-  },
-  addExerciseCheckboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  addExerciseCheckboxIcon: {
-    marginRight: 8,
-  },
-  addExerciseCheckboxLabel: {
-    fontSize: 15,
-    color: '#44403c',
-  },
+  addExerciseInputFull: { width: '100%' },
+  addExerciseCheckboxRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  addExerciseCheckboxIcon: { marginRight: 8 },
+  addExerciseCheckboxLabel: { fontSize: 15, color: '#44403c' },
   addExerciseBtn: {
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -1456,9 +848,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 12,
   },
-  addExerciseBtnFull: {
-    width: '100%',
-  },
+  addExerciseBtnFull: { width: '100%' },
   addExerciseBtnDisabled: { opacity: 0.5 },
   addExerciseBtnText: {
     color: '#fff',
