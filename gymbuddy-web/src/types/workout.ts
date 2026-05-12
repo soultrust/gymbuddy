@@ -28,9 +28,16 @@ export type Workout = {
   exercises: PerformedExercise[];
 };
 
+export type TemplateSetEntry = {
+  order: number;
+  reps: number;
+  weight?: string | number | null;
+  notes?: string;
+};
+
 export type TemplateExercise = {
   exercise: Exercise;
   user_preferred_name?: string;
   order: number;
-  last_sets: SetEntry[];
+  last_sets: TemplateSetEntry[];
 };

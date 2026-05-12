@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/api";
-import type { Workout, PerformedExercise, SetEntry, TemplateExercise } from "@/types/workout";
+import type { Workout, PerformedExercise, SetEntry, TemplateExercise, TemplateSetEntry } from "@/types/workout";
 import { formatDate, formatWeight } from "@/utils/format";
 
 function SetRow({
@@ -164,11 +164,11 @@ export default function WorkoutDetail({
   const getLastSets = (exerciseId: number) =>
     previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? [];
 
-  const formatLastSets = (sets: SetEntry[]) => {
+  const formatLastSets = (sets: TemplateSetEntry[]) => {
     if (sets.length === 0) return null;
     return sets
       .map((s) => {
-        const w = formatWeight(s.weight);
+        const w = formatWeight(s.weight ?? undefined);
         return `${s.reps} reps${w ? ` @ ${w}lbs` : ""}`;
       })
       .join(", ");
@@ -292,7 +292,7 @@ export default function WorkoutDetail({
       const nextOrder = exercises.length > 0 ? Math.max(...exercises.map((e) => e.order)) + 1 : 1;
 
       let userPreferredName = "";
-      let lastSets: SetEntry[] = [];
+      let lastSets: TemplateSetEntry[] = [];
       try {
         const last = await apiRequest<TemplateExercise>(
           `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,

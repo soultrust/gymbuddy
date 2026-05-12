@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/api";
-import type { Workout, PerformedExercise, TemplateExercise } from "@/types/workout";
+import type { Workout, PerformedExercise, TemplateExercise, TemplateSetEntry } from "@/types/workout";
 import { formatDate } from "@/utils/format";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -22,6 +22,7 @@ export default function WorkoutsList({
   const [createNotes, setCreateNotes] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [useTemplate, setUseTemplate] = useState(true);
 
   const fetchWorkouts = useCallback(async () => {
     if (!token) return;
@@ -75,21 +76,36 @@ export default function WorkoutsList({
           notes: createNotes.trim() || "",
         },
       });
-      for (const t of template) {
-        await apiRequest(`/workouts/${workout.id}/exercises/`, {
-          method: "POST",
-          token,
-          body: {
-            exercise: t.exercise.id,
-            user_preferred_name: t.user_preferred_name || "",
-            order: t.order,
-          },
-        });
+      if (useTemplate && template.length > 0) {
+        for (const t of template) {
+          const performed = await apiRequest<{ id: number }>(`/workouts/${workout.id}/exercises/`, {
+            method: "POST",
+            token,
+            body: {
+              exercise: t.exercise.id,
+              user_preferred_name: t.user_preferred_name || "",
+              order: t.order,
+            },
+          });
+          for (const s of (t.last_sets ?? []) as TemplateSetEntry[]) {
+            await apiRequest(`/performed-exercises/${performed.id}/sets/`, {
+              method: "POST",
+              token,
+              body: {
+                order: s.order,
+                reps: s.reps,
+                weight: s.weight != null && s.weight !== "" ? Number(s.weight) : null,
+                notes: s.notes ?? "",
+              },
+            });
+          }
+        }
       }
       setShowCreateForm(false);
       setCreateDate(todayISO());
       setCreateName("");
       setCreateNotes("");
+      setUseTemplate(true);
       await fetchWorkouts();
       if (workout.id && onSelectWorkout) onSelectWorkout(workout.id);
     } catch (err) {
@@ -130,7 +146,12 @@ export default function WorkoutsList({
       {showCreateForm && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => !createSubmitting && setShowCreateForm(false)}
+          onClick={() => {
+            if (!createSubmitting) {
+              setShowCreateForm(false);
+              setUseTemplate(true);
+            }
+          }}
           role="dialog"
           aria-modal
           aria-labelledby="create-workout-title"
@@ -143,9 +164,22 @@ export default function WorkoutsList({
               New Workout
             </h2>
             {template.length > 0 && (
-              <p className="text-sm text-stone-600 mb-4">
-                Based on last workout: {template.map((t) => t.exercise.name).join(", ")}
-              </p>
+              <div className="mb-4">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={useTemplate}
+                    onChange={(e) => setUseTemplate(e.target.checked)}
+                    className="mt-0.5 accent-amber-500 w-4 h-4 shrink-0"
+                  />
+                  <span className="text-sm text-stone-700">
+                    <span className="font-medium">Use last workout as template</span>
+                    <span className="block text-stone-400 font-normal mt-0.5">
+                      {template.map((t) => t.exercise.name).join(", ")}
+                    </span>
+                  </span>
+                </label>
+              </div>
             )}
             <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4">
               <div>
@@ -200,7 +234,12 @@ export default function WorkoutsList({
               <div className="flex gap-2 justify-end pt-2">
                 <button
                   type="button"
-                  onClick={() => !createSubmitting && setShowCreateForm(false)}
+                  onClick={() => {
+                    if (!createSubmitting) {
+                      setShowCreateForm(false);
+                      setUseTemplate(true);
+                    }
+                  }}
                   className="px-4 py-2 text-stone-600 hover:text-stone-900 font-medium"
                 >
                   Cancel
