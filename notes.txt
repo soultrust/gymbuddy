@@ -33,3 +33,25 @@ gcloud run deploy gymbuddy-api \
   --add-cloudsql-instances=soultrust-gymbuddy:us-central1:gymbuddy-db \
   --set-secrets="/secrets/firebase-service-account.json=firebase-service-account:latest" \
   --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-service-account.json,DATABASE_URL=postgresql://postgres:YOUR_DB_PASSWORD@/gymbuddy?host=/cloudsql/soultrust-gymbuddy:us-central1:gymbuddy-db"
+
+---------
+to get local mobile version working..
+
+npm install from within gymbuddy-mobile 
+
+create virtual env in gymbuddy-api
+and activate it. 
+
+then runserver
+
+go to gcloud console and generate new firebase service account at place it at root of api 
+
+
+cd /Users/soultrust/dev/personal-projects/gymbuddy/gymbuddy-mobile
+npm install
+npx eas-cli@latest login (use creds for expo.dev)
+npx eas-cli@latest build --platform android --profile production
+
+then download apk from expo.dev to your phone 
+update your app.
+

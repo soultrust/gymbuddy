@@ -6,6 +6,8 @@ type RequestOptions = {
   token?: string | null
 }
 
+const REQUEST_TIMEOUT_MS = 45_000
+
 export async function apiRequest<T>(
   path: string,
   { method = 'GET', body, token }: RequestOptions = {}
@@ -18,11 +20,30 @@ export async function apiRequest<T>(
     headers['Authorization'] = `Token ${token}`
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    })
+  } catch (e) {
+    clearTimeout(timeoutId)
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error(
+        `Request timed out after ${REQUEST_TIMEOUT_MS / 1000}s (${url})`,
+      )
+    }
+    const msg = e instanceof Error ? e.message : String(e)
+    throw new Error(
+      `Network error (${msg}). Check API URL, Wi‑Fi, and that Django is on 0.0.0.0:8000 for a phone.`,
+    )
+  }
+  clearTimeout(timeoutId)
 
   const data = await res.json().catch(() => null)
   if (!res.ok) {

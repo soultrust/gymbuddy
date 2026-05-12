@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/api";
-import type { Workout, PerformedExercise, SetEntry, TemplateExercise } from "@/types/workout";
+import type { Workout, PerformedExercise, TemplateExercise } from "@/types/workout";
 import { formatDate } from "@/utils/format";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);

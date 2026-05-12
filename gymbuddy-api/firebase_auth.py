@@ -2,7 +2,8 @@
 Firebase token verification and Django token exchange.
 
 Set GOOGLE_APPLICATION_CREDENTIALS to the path of your Firebase service account JSON,
-or place it at gymbuddy-api/firebase-service-account.json
+or place JSON in this directory as firebase-service-account.json (or use Firebase's
+default download name *-firebase-adminsdk-*.json).
 
 To add OAuth2 providers (Google, Apple, etc.): verify the provider's token, extract
 provider_uid and email, then use UserIdentity to find or create the user - same pattern
@@ -28,16 +29,28 @@ from accounts.models import UserIdentity
 User = get_user_model()
 
 
+def _resolve_firebase_cred_path() -> str:
+    """Path to service account JSON: env var, then firebase-service-account.json, then Firebase default download name."""
+    api_dir = Path(__file__).resolve().parent
+    env = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if env:
+        return env
+    preferred = api_dir / "firebase-service-account.json"
+    if preferred.exists():
+        return str(preferred)
+    matches = sorted(api_dir.glob("*-firebase-adminsdk-*.json"))
+    if matches:
+        return str(matches[0])
+    return str(preferred)
+
+
 def _init_firebase():
     import firebase_admin
     from firebase_admin import credentials
 
     if firebase_admin._apps:
         return
-    cred_path = os.environ.get(
-        "GOOGLE_APPLICATION_CREDENTIALS",
-        str(Path(__file__).resolve().parent / "firebase-service-account.json"),
-    )
+    cred_path = _resolve_firebase_cred_path()
     logger.info(f"Looking for Firebase credentials at: {cred_path}")
     logger.info(
         f"GOOGLE_APPLICATION_CREDENTIALS env var: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', 'NOT SET')}"
@@ -45,7 +58,9 @@ def _init_firebase():
     if not os.path.exists(cred_path):
         error_msg = (
             f"Firebase service account not found at {cred_path}. "
-            "Download it from Firebase Console > Project Settings > Service Accounts."
+            "Add gymbuddy-api/firebase-service-account.json or *-firebase-adminsdk-*.json, "
+            "or set GOOGLE_APPLICATION_CREDENTIALS. "
+            "Download from Firebase Console > Project Settings > Service Accounts."
         )
         logger.error(error_msg)
         raise FileNotFoundError(error_msg)

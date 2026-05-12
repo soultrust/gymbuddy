@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 20,
     fontSize: 16,
+    color: '#1c1917',
     backgroundColor: '#fff',
   },
   button: {
