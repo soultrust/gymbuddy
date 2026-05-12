@@ -14,6 +14,7 @@ export default function WorkoutsList({
   const { token, logout } = useAuth();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [template, setTemplate] = useState<TemplateExercise[]>([]);
@@ -28,11 +29,17 @@ export default function WorkoutsList({
     if (!token) return;
     try {
       const data = await apiRequest<Workout[] | { results: Workout[] }>("/workouts/", { token });
+      setListError(null);
       setWorkouts(Array.isArray(data) ? data : data.results ?? []);
-    } catch {
-      setWorkouts([]);
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 401) {
+        await logout();
+      } else {
+        setListError(err instanceof Error ? err.message : "Could not load workouts.");
+      }
     }
-  }, [token]);
+  }, [token, logout]);
 
   const fetchTemplate = useCallback(async () => {
     if (!token) return;
@@ -267,7 +274,17 @@ export default function WorkoutsList({
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
-        {workouts.length === 0 ? (
+        {listError ? (
+          <div className="flex flex-col items-center gap-3 py-12">
+            <p className="text-red-600 text-sm text-center">{listError}</p>
+            <button
+              onClick={() => { setListError(null); fetchWorkouts(); }}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition"
+            >
+              Try again
+            </button>
+          </div>
+        ) : workouts.length === 0 ? (
           <p className="text-stone-500 text-center py-12">No workouts yet</p>
         ) : (
           (() => {

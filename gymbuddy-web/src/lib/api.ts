@@ -32,7 +32,9 @@ export async function apiRequest<T>(
       data?.non_field_errors?.[0] ||
       (typeof data === "object" ? JSON.stringify(data) : data) ||
       res.statusText;
-    throw new Error(message);
+    const err = new Error(message) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
   return data;
 }
