@@ -1,12 +1,11 @@
-// Import the functions you need from the SDKs you need
+// ─── Firebase config ─────────────────────────────────────────────────────────
+// Keep in sync with gymbuddy-mobile/src/lib/firebase.ts.
+// firebaseConfig must be identical in both files so web and mobile share the
+// same Firebase project, users, and auth tokens.
+// ─────────────────────────────────────────────────────────────────────────────
 import { initializeApp } from "firebase/app";
-// import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAW9zdx8-K1pvRRy8SLVqy2vIWyY6Mm-x0",
   authDomain: "soultrust-gymbuddy.firebaseapp.com",

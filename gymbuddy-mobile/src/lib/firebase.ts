@@ -1,3 +1,8 @@
+// ─── Firebase config ─────────────────────────────────────────────────────────
+// Keep in sync with gymbuddy-web/src/lib/firebase.ts.
+// firebaseConfig must be identical in both files so web and mobile share the
+// same Firebase project, users, and auth tokens.
+// ─────────────────────────────────────────────────────────────────────────────
 import { initializeApp } from 'firebase/app'
 import type { Auth } from 'firebase/auth'
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'
@@ -12,7 +17,6 @@ const {
   ) => import('@firebase/auth').Persistence
 } = require('@firebase/auth')
 
-// Same config as gymbuddy-web so the same users and data are used
 const firebaseConfig = {
   apiKey: 'AIzaSyAW9zdx8-K1pvRRy8SLVqy2vIWyY6Mm-x0',
   authDomain: 'soultrust-gymbuddy.firebaseapp.com',
