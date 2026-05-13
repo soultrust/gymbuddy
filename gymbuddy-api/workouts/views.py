@@ -303,10 +303,11 @@ class SetEntryViewSet(
         )
         if not remaining:
             return
-        offset = 1000
+        # Two-pass reorder avoids unique_together(performed_exercise, order) violations:
+        # first shift all orders out of range, then assign compact 1-based values.
         for set_entry in remaining:
-            set_entry.order = offset + set_entry.order
-            set_entry.save(update_fields=["order"])
+            set_entry.order += 1000
+        SetEntry.objects.bulk_update(remaining, ["order"])
         for order, set_entry in enumerate(remaining, start=1):
             set_entry.order = order
-            set_entry.save(update_fields=["order"])
+        SetEntry.objects.bulk_update(remaining, ["order"])
