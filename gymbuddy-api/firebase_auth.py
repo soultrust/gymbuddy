@@ -82,6 +82,7 @@ def exchange_firebase_token(request: Request) -> Response:
     try:
         _init_firebase()
         from firebase_admin import auth as firebase_auth
+        from firebase_admin import exceptions as firebase_exceptions
 
         decoded = firebase_auth.verify_id_token(id_token)
         uid = decoded.get("uid")
@@ -128,9 +129,31 @@ def exchange_firebase_token(request: Request) -> Response:
             {"detail": f"Server configuration error: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-    except Exception as e:
-        logger.exception("Firebase token exchange failed")
+    except firebase_auth.CertificateFetchError:
+        # Google's public-key endpoint was unreachable — transient network issue.
+        logger.exception("Could not fetch Firebase certificates")
         return Response(
-            {"detail": str(e)},
+            {"detail": "Authentication service temporarily unavailable. Please try again."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except firebase_auth.InvalidIdTokenError as e:
+        # Covers expired, revoked, malformed, and user-disabled token errors.
+        logger.warning("Invalid Firebase ID token: %s", e)
+        return Response(
+            {"detail": "Invalid or expired token. Please sign in again."},
             status=status.HTTP_401_UNAUTHORIZED,
+        )
+    except firebase_exceptions.FirebaseError:
+        # Other Firebase SDK errors (e.g. mis-configured project, quota exceeded).
+        logger.exception("Firebase error during token exchange")
+        return Response(
+            {"detail": "Authentication service error. Please try again later."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    except Exception:
+        # Unexpected errors: database failures, programming errors, etc.
+        logger.exception("Unexpected error during token exchange")
+        return Response(
+            {"detail": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
