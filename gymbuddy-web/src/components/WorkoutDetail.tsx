@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { apiRequest } from "@/lib/api";
-import type { Workout, PerformedExercise, SetEntry, TemplateExercise, TemplateSetEntry } from "@/types/workout";
-import { formatDate, formatWeight } from "@/utils/format";
+import { useRef } from "react";
+import type { SetEntry } from "@/types/workout";
+import { formatDate } from "@/utils/format";
+import { useWorkoutDetail } from "@/hooks/useWorkoutDetail";
 
 function SetRow({
   set: s,
@@ -107,238 +106,42 @@ export default function WorkoutDetail({
   workoutId: number;
   onBack: () => void;
 }) {
-  const { token } = useAuth();
-  const [workout, setWorkout] = useState<Workout | null>(null);
-  const [previousExercises, setPreviousExercises] = useState<TemplateExercise[]>([]);
-  const [userExercises, setUserExercises] = useState<{ id: number; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [mutationError, setMutationError] = useState<string | null>(null);
-  const [newExerciseName, setNewExerciseName] = useState("");
-  const [addingExercise, setAddingExercise] = useState(false);
-
-  const fetchWorkout = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await apiRequest<Workout>(`/workouts/${workoutId}/`, { token });
-      setFetchError(null);
-      setWorkout(data);
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : "Could not load workout.");
-      setWorkout(null);
-    }
-  }, [token, workoutId]);
-
-  const fetchPrevious = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await apiRequest<TemplateExercise[]>(
-        `/workouts/${workoutId}/previous_exercises/`,
-        { token }
-      );
-      setPreviousExercises(Array.isArray(data) ? data : []);
-    } catch {
-      setPreviousExercises([]);
-    }
-  }, [token, workoutId]);
-
-  const fetchUserExercises = useCallback(async () => {
-    if (!token) return;
-    try {
-      const data = await apiRequest<{ id: number; name: string }[]>(
-        `/workouts/user_exercises/`,
-        { token }
-      );
-      setUserExercises(Array.isArray(data) ? data : []);
-    } catch {
-      setUserExercises([]);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises()]).finally(() =>
-      setLoading(false)
-    );
-  }, [fetchWorkout, fetchPrevious, fetchUserExercises]);
-
-  const getLastSets = (exerciseId: number) =>
-    previousExercises.find((p) => p.exercise.id === exerciseId)?.last_sets ?? [];
-
-  const formatLastSets = (sets: TemplateSetEntry[]) => {
-    if (sets.length === 0) return null;
-    return sets
-      .map((s) => {
-        const w = formatWeight(s.weight ?? undefined);
-        return `${s.reps} reps${w ? ` @ ${w}lbs` : ""}`;
-      })
-      .join(", ");
-  };
-
-  const [addingSetFor, setAddingSetFor] = useState<number | null>(null);
-  const [newSetReps, setNewSetReps] = useState("10");
-  const [newSetWeight, setNewSetWeight] = useState("");
-  const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null);
-  const [editingExerciseName, setEditingExerciseName] = useState("");
-  const [editingSetId, setEditingSetId] = useState<number | null>(null);
-  const [editingSetReps, setEditingSetReps] = useState("");
-  const [editingSetWeight, setEditingSetWeight] = useState("");
-
-  const submitAddSet = async (performedExerciseId: number, currentSets: SetEntry[]) => {
-    if (!token || !workout) return;
-    const nextOrder = currentSets.length > 0 ? Math.max(...currentSets.map((s) => s.order)) + 1 : 1;
-    const reps = parseInt(newSetReps, 10);
-    if (isNaN(reps) || reps < 0) return;
-    try {
-      await apiRequest(`/performed-exercises/${performedExerciseId}/sets/`, {
-        method: "POST",
-        token,
-        body: {
-          order: nextOrder,
-          reps,
-          weight: newSetWeight ? parseFloat(newSetWeight) : null,
-          notes: "",
-        },
-      });
-      setAddingSetFor(null);
-      setNewSetReps("10");
-      setNewSetWeight("");
-      await fetchWorkout();
-    } catch (e) {
-      setMutationError(e instanceof Error ? e.message : "Could not add set.");
-    }
-  };
-
-
-  const handleSaveSet = async (set: SetEntry) => {
-    if (!token) return;
-    const reps = parseInt(editingSetReps, 10);
-    if (isNaN(reps) || reps < 0) return;
-    try {
-      await apiRequest(`/set-entries/${set.id}/`, {
-        method: "PATCH",
-        token,
-        body: {
-          reps,
-          weight: editingSetWeight ? parseFloat(editingSetWeight) : null,
-        },
-      });
-      setEditingSetId(null);
-      await fetchWorkout();
-    } catch (e) {
-      setMutationError(e instanceof Error ? e.message : "Could not save set.");
-    }
-  };
-
-  const handleDeleteSet = async (set: SetEntry) => {
-    if (!token) return;
-    try {
-      await apiRequest(`/set-entries/${set.id}/`, {
-        method: "DELETE",
-        token,
-      });
-      setEditingSetId(null);
-      await fetchWorkout();
-    } catch (e) {
-      setMutationError(e instanceof Error ? e.message : "Could not delete set.");
-    }
-  };
-
-  const handleSaveExerciseName = async (pe: PerformedExercise) => {
-    if (!token) return;
-    const name = editingExerciseName.trim();
-    try {
-      await apiRequest(`/performed-exercises/${pe.id}/`, {
-        method: "PATCH",
-        token,
-        body: { user_preferred_name: name || "" },
-      });
-      setEditingExerciseId(null);
-      await fetchWorkout();
-    } catch (e) {
-      setMutationError(e instanceof Error ? e.message : "Could not save exercise name.");
-    }
-  };
-
-  const handleAddExercise = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token || !newExerciseName.trim()) return;
-    setAddingExercise(true);
-    try {
-      const exercises = workout?.exercises ?? [];
-      const nextOrder = exercises.length > 0 ? Math.max(...exercises.map((e) => e.order)) + 1 : 1;
-      await apiRequest(`/workouts/${workoutId}/exercises/`, {
-        method: "POST",
-        token,
-        body: {
-          exercise_name: newExerciseName.trim(),
-          order: nextOrder,
-          user_preferred_name: "",
-        },
-      });
-      setNewExerciseName("");
-      await fetchWorkout();
-    } catch (e) {
-      setMutationError(e instanceof Error ? e.message : "Could not add exercise.");
-    } finally {
-      setAddingExercise(false);
-    }
-  };
-
-  const handleAddPastExercise = async (exerciseId: number) => {
-    if (!token || !workout) return;
-    setAddingExercise(true);
-    try {
-      const exercises = workout.exercises ?? [];
-      const nextOrder = exercises.length > 0 ? Math.max(...exercises.map((e) => e.order)) + 1 : 1;
-
-      let userPreferredName = "";
-      let lastSets: TemplateSetEntry[] = [];
-      try {
-        const last = await apiRequest<TemplateExercise>(
-          `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,
-          { token }
-        );
-        if (last?.user_preferred_name) userPreferredName = last.user_preferred_name;
-        if (Array.isArray(last?.last_sets) && last.last_sets.length > 0) lastSets = last.last_sets;
-      } catch {
-        // No previous performance; add exercise with no sets
-      }
-
-      const created = await apiRequest<PerformedExercise>(
-        `/workouts/${workoutId}/exercises/`,
-        {
-          method: "POST",
-          token,
-          body: {
-            exercise: exerciseId,
-            order: nextOrder,
-            user_preferred_name: userPreferredName,
-          },
-        }
-      );
-
-      for (let i = 0; i < lastSets.length; i++) {
-        const s = lastSets[i];
-        const reps = typeof s.reps === "number" ? s.reps : parseInt(String(s.reps), 10);
-        if (isNaN(reps) || reps < 0) continue;
-        await apiRequest(`/performed-exercises/${created.id}/sets/`, {
-          method: "POST",
-          token,
-          body: {
-            order: i + 1,
-            reps,
-            weight: s.weight != null && s.weight !== "" ? parseFloat(String(s.weight)) : null,
-            notes: s.notes ?? "",
-          },
-        });
-      }
-      await fetchWorkout();
-    } catch (e) {
-      setMutationError(e instanceof Error ? e.message : "Could not add exercise.");
-    } finally {
-      setAddingExercise(false);
-    }
-  };
+  const {
+    workout,
+    loading,
+    fetchError,
+    mutationError,
+    setMutationError,
+    userExercises,
+    newExerciseName,
+    setNewExerciseName,
+    addingExercise,
+    addingSetFor,
+    setAddingSetFor,
+    newSetReps,
+    setNewSetReps,
+    newSetWeight,
+    setNewSetWeight,
+    editingExerciseId,
+    setEditingExerciseId,
+    editingExerciseName,
+    setEditingExerciseName,
+    editingSetId,
+    setEditingSetId,
+    editingSetReps,
+    setEditingSetReps,
+    editingSetWeight,
+    setEditingSetWeight,
+    getLastSets,
+    formatLastSets,
+    retry,
+    submitAddSet,
+    handleSaveSet,
+    handleDeleteSet,
+    handleSaveExerciseName,
+    handleAddExercise,
+    handleAddPastExercise,
+  } = useWorkoutDetail(workoutId);
 
   if (loading) {
     return (
@@ -361,13 +164,7 @@ export default function WorkoutDetail({
           </button>
           {fetchError && (
             <button
-              onClick={() => {
-                setFetchError(null);
-                setLoading(true);
-                Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises()]).finally(() =>
-                  setLoading(false)
-                );
-              }}
+              onClick={retry}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition"
             >
               Try again
@@ -407,6 +204,7 @@ export default function WorkoutDetail({
             </button>
           </div>
         )}
+
         {workout.exercises.length === 0 ? (
           <p className="text-stone-500 text-center py-8">No exercises yet. Add one below.</p>
         ) : (
@@ -451,6 +249,7 @@ export default function WorkoutDetail({
                     )}
                     {lastText && <span className="text-sm text-stone-500">Last: {lastText}</span>}
                   </div>
+
                   <div className="space-y-2">
                     {pe.sets.map((s) => (
                       <SetRow
@@ -530,7 +329,10 @@ export default function WorkoutDetail({
               htmlFor="add-past-exercise"
               className="block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2"
             >
-              Add past exercise <span className="font-normal normal-case tracking-normal text-stone-400">(uses data from last time)</span>
+              Add past exercise{" "}
+              <span className="font-normal normal-case tracking-normal text-stone-400">
+                (uses data from last time)
+              </span>
             </label>
             <select
               id="add-past-exercise"
@@ -552,6 +354,7 @@ export default function WorkoutDetail({
             </select>
           </div>
         )}
+
         <form
           onSubmit={handleAddExercise}
           className="mt-6 p-4 rounded-xl border border-stone-200 bg-white shadow-sm flex flex-col gap-2"
