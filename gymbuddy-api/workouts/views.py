@@ -1,5 +1,6 @@
 # workouts/views.py
 # pyright: reportUnreachable=false
+from django.db.models import OuterRef, Prefetch, Subquery
 from rest_framework import viewsets, status
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import action
@@ -49,8 +50,6 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
 
     def _annotated_exercises_qs(self):
         """PerformedExercise queryset annotated with the user's note (avoids N+1)."""
-        from django.db.models import OuterRef, Subquery
-
         user_note_subq = Subquery(
             UserExerciseNote.objects.filter(
                 user=self.request.user,
@@ -64,8 +63,6 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        from django.db.models import Prefetch
-
         return (
             self.queryset.filter(user=self.request.user)
             .prefetch_related(
