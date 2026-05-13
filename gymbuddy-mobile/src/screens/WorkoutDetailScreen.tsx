@@ -64,8 +64,6 @@ export default function WorkoutDetailScreen({
     getNotesFor,
     setNotesFor,
     fadeAnim,
-    getLastSets,
-    formatLastSets,
     setWeightDecimal,
     setRepsDecimal,
     fetchWorkout,
@@ -176,8 +174,6 @@ export default function WorkoutDetailScreen({
               <Text style={styles.empty}>No exercises yet. Add one below.</Text>
             ) : (
               workout.exercises.map((pe) => {
-                const lastSets = getLastSets(pe.exercise.id)
-                const lastText = formatLastSets(lastSets)
                 const isBodyweight = Boolean(pe.is_bodyweight)
                 return (
                   <View key={pe.id} style={styles.exerciseCard}>
@@ -643,7 +639,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
   },
   exerciseName: { fontSize: 16, fontWeight: '600', color: '#fff7ed' },
-  lastText: { fontSize: 14, color: '#78716c' },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
