@@ -47,12 +47,13 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
         fields = ["id", "exercise", "user_preferred_name", "order", "is_bodyweight", "sets", "note_for_next_time"]
 
     def get_note_for_next_time(self, instance):
+        # Fast path: annotation set by the viewset's annotated queryset (avoids N+1).
+        if hasattr(instance, "_prefetched_note"):
+            return instance._prefetched_note or ""
+        # Fallback: single query (used when serializer is called without annotation).
         request = self.context.get("request")
         if not request or not request.user:
             return ""
-        # Use prefetched notes if available (avoids N+1)
-        if hasattr(instance, "_prefetched_note"):
-            return instance._prefetched_note
         note_obj = UserExerciseNote.objects.filter(
             user=request.user, exercise=instance.exercise
         ).first()

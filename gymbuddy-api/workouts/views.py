@@ -47,12 +47,29 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     serializer_class = SessionSerializer
     queryset = Session.objects.all()
 
+    def _annotated_exercises_qs(self):
+        """PerformedExercise queryset annotated with the user's note (avoids N+1)."""
+        from django.db.models import OuterRef, Subquery
+
+        user_note_subq = Subquery(
+            UserExerciseNote.objects.filter(
+                user=self.request.user,
+                exercise=OuterRef("exercise"),
+            ).values("note")[:1]
+        )
+        return (
+            PerformedExercise.objects.select_related("exercise")
+            .prefetch_related("sets")
+            .annotate(_prefetched_note=user_note_subq)
+        )
+
     def get_queryset(self):
+        from django.db.models import Prefetch
+
         return (
             self.queryset.filter(user=self.request.user)
             .prefetch_related(
-                "exercises__exercise",
-                "exercises__sets",
+                Prefetch("exercises", queryset=self._annotated_exercises_qs()),
             )
         )
 
@@ -210,7 +227,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def _list_exercises(self, session):
-        exercises = session.exercises.all().select_related("exercise").prefetch_related("sets")
+        exercises = self._annotated_exercises_qs().filter(session=session)
         serializer = PerformedExerciseSerializer(
             exercises, many=True, context={"request": self.request}
         )
