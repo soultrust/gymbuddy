@@ -7,6 +7,12 @@ import WorkoutDetail from "@/components/WorkoutDetail";
 export default function App() {
   const { token, isLoading, authError, clearAuthError } = useAuth();
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
+  const [listRefreshKey, setListRefreshKey] = useState(0);
+
+  const handleBack = () => {
+    setSelectedWorkoutId(null);
+    setListRefreshKey((k) => k + 1);
+  };
 
   if (isLoading) {
     return (
@@ -19,10 +25,15 @@ export default function App() {
   if (token) {
     return (
       <div className="min-h-screen flex flex-col bg-stone-50">
-        {selectedWorkoutId ? (
-          <WorkoutDetail workoutId={selectedWorkoutId} onBack={() => setSelectedWorkoutId(null)} />
-        ) : (
-          <WorkoutsList onSelectWorkout={setSelectedWorkoutId} />
+        {/* Keep WorkoutsList mounted so it holds data; hide it while a detail is open */}
+        <div className={selectedWorkoutId ? "hidden" : "flex flex-col flex-1"}>
+          <WorkoutsList
+            onSelectWorkout={setSelectedWorkoutId}
+            refreshKey={listRefreshKey}
+          />
+        </div>
+        {selectedWorkoutId && (
+          <WorkoutDetail workoutId={selectedWorkoutId} onBack={handleBack} />
         )}
       </div>
     );

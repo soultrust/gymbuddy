@@ -8,8 +8,10 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function WorkoutsList({
   onSelectWorkout,
+  refreshKey = 0,
 }: {
   onSelectWorkout?: (id: number) => void;
+  refreshKey?: number;
 }) {
   const { token, logout } = useAuth();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -54,6 +56,14 @@ export default function WorkoutsList({
   useEffect(() => {
     fetchWorkouts().finally(() => setLoading(false));
   }, [fetchWorkouts]);
+
+  // Silent background refresh when navigating back from a workout detail.
+  // refreshKey is incremented by App each time the user returns to the list.
+  useEffect(() => {
+    if (refreshKey > 0) {
+      fetchWorkouts();
+    }
+  }, [refreshKey, fetchWorkouts]);
 
   useEffect(() => {
     if (showCreateForm) {
