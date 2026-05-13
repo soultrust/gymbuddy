@@ -1,3 +1,9 @@
+// ─── Canonical workout types ────────────────────────────────────────────────
+// Keep in sync with gymbuddy-mobile/src/types/workout.ts.
+// Both files must be identical (minus style: web uses semicolons, mobile omits them).
+// When adding or changing a field here, update the mobile file too, and vice-versa.
+// ────────────────────────────────────────────────────────────────────────────
+
 export type Exercise = {
   id: number;
   name: string;
@@ -17,12 +23,15 @@ export type PerformedExercise = {
   exercise: Exercise;
   user_preferred_name?: string;
   order: number;
+  is_bodyweight?: boolean;
   sets: SetEntry[];
+  note_for_next_time?: string;
 };
 
 export type Workout = {
   id: number;
   date: string;
+  date_display?: string;
   name: string;
   notes: string;
   exercises: PerformedExercise[];
@@ -41,3 +50,5 @@ export type TemplateExercise = {
   order: number;
   last_sets: TemplateSetEntry[];
 };
+
+export type TemplateSource = "previous" | "another" | "none";

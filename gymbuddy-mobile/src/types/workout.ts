@@ -1,3 +1,9 @@
+// ─── Canonical workout types ────────────────────────────────────────────────
+// Keep in sync with gymbuddy-web/src/types/workout.ts.
+// Both files must be identical (minus style: mobile omits semicolons, web uses them).
+// When adding or changing a field here, update the web file too, and vice-versa.
+// ────────────────────────────────────────────────────────────────────────────
+
 export type Exercise = {
   id: number
   name: string
