@@ -11,7 +11,7 @@ import type {
 import { formatWeight } from "@/utils/format";
 
 export function useWorkoutDetail(workoutId: number) {
-  const { token } = useAuth();
+  const { token, logout } = useAuth();
 
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [previousExercises, setPreviousExercises] = useState<TemplateExercise[]>([]);
@@ -37,10 +37,14 @@ export function useWorkoutDetail(workoutId: number) {
       setFetchError(null);
       setWorkout(data);
     } catch (e) {
+      if ((e as { status?: number }).status === 401) {
+        await logout();
+        return;
+      }
       setFetchError(e instanceof Error ? e.message : "Could not load workout.");
       setWorkout(null);
     }
-  }, [token, workoutId]);
+  }, [token, workoutId, logout]);
 
   const fetchPrevious = useCallback(async () => {
     if (!token) return;

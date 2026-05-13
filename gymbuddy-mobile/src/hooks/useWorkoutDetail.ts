@@ -438,6 +438,26 @@ export function useWorkoutDetail(
     }
   }
 
+  const handleSaveNote = async (peId: number) => {
+    const note = (getNotesFor(peId).nextTimeNote ?? '').trim()
+    if (note.length === 0) {
+      setExpandedNotesFor(null)
+      return
+    }
+    try {
+      await apiRequest(`/performed-exercises/${peId}/note_for_next_time/`, {
+        method: 'POST',
+        body: { note },
+        token,
+      })
+      setNotesFor(peId, (prev) => ({ ...prev, nextTimeNote: '' }))
+      await fetchWorkout()
+      setExpandedNotesFor(null)
+    } catch (e) {
+      Alert.alert('Could not save note', (e as Error)?.message ?? 'Please try again.')
+    }
+  }
+
   const retry = () => {
     setFetchError(null)
     setLoading(true)
@@ -499,6 +519,7 @@ export function useWorkoutDetail(
     handleDeleteWorkout,
     handleAddExercise,
     handleAddPastExercise,
+    handleSaveNote,
     retry,
   }
 }

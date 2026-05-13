@@ -109,13 +109,8 @@ def exchange_firebase_token(request: Request) -> Response:
                     provider_uid=uid,
                 )
             else:
-                user = User.objects.create_user(
-                    username=email,
-                    email=email,
-                    password=os.urandom(32).hex(),
-                )
-                user.set_unusable_password()
-                user.save()
+                # Omitting password makes Django set an unusable password automatically.
+                user = User.objects.create_user(username=email, email=email)
                 UserIdentity.objects.create(
                     user=user,
                     provider=UserIdentity.Provider.FIREBASE,

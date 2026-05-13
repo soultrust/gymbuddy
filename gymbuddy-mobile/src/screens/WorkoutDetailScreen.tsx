@@ -1,6 +1,5 @@
 import React from 'react'
 import {
-  Alert,
   Animated,
   Platform,
   ScrollView,
@@ -15,7 +14,6 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
-import { apiRequest } from '../api/client'
 import { formatWeight, formatFullDate, formatNumber } from '../utils/format'
 import { stepRepsValue } from '../utils/numberInput'
 import ArrowIcon from '../components/ArrowIcon'
@@ -66,7 +64,6 @@ export default function WorkoutDetailScreen({
     fadeAnim,
     setWeightDecimal,
     setRepsDecimal,
-    fetchWorkout,
     handleAddSet,
     saveSetToApi,
     handleSaveSet,
@@ -76,6 +73,7 @@ export default function WorkoutDetailScreen({
     handleDeleteWorkout,
     handleAddExercise,
     handleAddPastExercise,
+    handleSaveNote,
     dismissEditSet,
     retry,
   } = useWorkoutDetail(workoutId, token, navigation.goBack)
@@ -449,32 +447,7 @@ export default function WorkoutDetailScreen({
                           </View>
                           <TouchableOpacity
                             style={styles.notesDoneBtn}
-                            onPress={async () => {
-                              const note = (
-                                getNotesFor(pe.id).nextTimeNote ?? ''
-                              ).trim()
-                              if (note.length === 0) {
-                                setExpandedNotesFor(null)
-                                return
-                              }
-                              try {
-                                await apiRequest(
-                                  `/performed-exercises/${pe.id}/note_for_next_time/`,
-                                  { method: 'POST', body: { note }, token },
-                                )
-                                setNotesFor(pe.id, (prev) => ({
-                                  ...prev,
-                                  nextTimeNote: '',
-                                }))
-                                await fetchWorkout()
-                                setExpandedNotesFor(null)
-                              } catch (e) {
-                                Alert.alert(
-                                  'Could not save note',
-                                  (e as Error)?.message ?? 'Please try again.',
-                                )
-                              }
-                            }}
+                            onPress={() => handleSaveNote(pe.id)}
                           >
                             <Text style={styles.notesDoneText}>Done</Text>
                           </TouchableOpacity>
