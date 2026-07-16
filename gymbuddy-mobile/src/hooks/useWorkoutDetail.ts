@@ -28,6 +28,8 @@ export function useWorkoutDetail(
   const [addingSetFor, setAddingSetFor] = useState<number | null>(null)
   const [newSetReps, setNewSetReps] = useState('1')
   const [newSetWeight, setNewSetWeight] = useState('')
+  const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null)
+  const [editingExerciseName, setEditingExerciseName] = useState('')
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
   const [editingSetReps, setEditingSetReps] = useState('')
   const [editingSetWeight, setEditingSetWeight] = useState('')
@@ -438,6 +440,22 @@ export function useWorkoutDetail(
     }
   }
 
+  const handleSaveExerciseName = async (pe: PerformedExercise) => {
+    if (!token) return
+    const name = editingExerciseName.trim()
+    try {
+      await apiRequest(`/performed-exercises/${pe.id}/`, {
+        method: 'PATCH',
+        token,
+        body: { user_preferred_name: name || '' },
+      })
+      setEditingExerciseId(null)
+      await fetchWorkout()
+    } catch (e) {
+      Alert.alert('Could not save name', (e as Error)?.message ?? 'Please try again.')
+    }
+  }
+
   const handleSaveNote = async (peId: number) => {
     const note = (getNotesFor(peId).nextTimeNote ?? '').trim()
     if (note.length === 0) {
@@ -484,6 +502,10 @@ export function useWorkoutDetail(
     setNewSetReps,
     newSetWeight,
     setNewSetWeight,
+    editingExerciseId,
+    setEditingExerciseId,
+    editingExerciseName,
+    setEditingExerciseName,
     editingSetId,
     setEditingSetId,
     editingSetReps,
@@ -517,6 +539,7 @@ export function useWorkoutDetail(
     handleDeleteExercise,
     confirmDeleteExercise,
     handleDeleteWorkout,
+    handleSaveExerciseName,
     handleAddExercise,
     handleAddPastExercise,
     handleSaveNote,

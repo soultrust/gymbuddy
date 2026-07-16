@@ -47,6 +47,10 @@ export default function WorkoutDetailScreen({
     setNewSetReps,
     newSetWeight,
     setNewSetWeight,
+    editingExerciseId,
+    setEditingExerciseId,
+    editingExerciseName,
+    setEditingExerciseName,
     editingSetId,
     setEditingSetId,
     editingSetReps,
@@ -71,6 +75,7 @@ export default function WorkoutDetailScreen({
     confirmDeleteSet,
     confirmDeleteExercise,
     handleDeleteWorkout,
+    handleSaveExerciseName,
     handleAddExercise,
     handleAddPastExercise,
     handleSaveNote,
@@ -176,9 +181,30 @@ export default function WorkoutDetailScreen({
                 return (
                   <View key={pe.id} style={styles.exerciseCard}>
                     <View style={styles.exerciseHeader}>
-                      <Text style={styles.exerciseName}>
-                        {pe.user_preferred_name || pe.exercise.name}
-                      </Text>
+                      {editingExerciseId === pe.id ? (
+                        <TextInput
+                          value={editingExerciseName}
+                          onChangeText={setEditingExerciseName}
+                          onBlur={() => handleSaveExerciseName(pe)}
+                          onSubmitEditing={() => handleSaveExerciseName(pe)}
+                          autoFocus
+                          returnKeyType="done"
+                          style={styles.exerciseNameInput}
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEditingExerciseId(pe.id)
+                            setEditingExerciseName(
+                              pe.user_preferred_name || pe.exercise.name || '',
+                            )
+                          }}
+                        >
+                          <Text style={styles.exerciseName}>
+                            {pe.user_preferred_name || pe.exercise.name}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         onPress={() => confirmDeleteExercise(pe)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -612,6 +638,15 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
   },
   exerciseName: { fontSize: 16, fontWeight: '600', color: '#fff7ed' },
+  exerciseNameInput: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff7ed',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f59e0b',
+    flex: 1,
+    paddingVertical: 0,
+  },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
