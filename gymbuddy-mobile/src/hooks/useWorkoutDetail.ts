@@ -456,9 +456,10 @@ export function useWorkoutDetail(
     }
   }
 
-  const handleSaveNote = async (peId: number) => {
+  const handleSaveNote = async (peId: number, originalNote?: string | null) => {
     const note = (getNotesFor(peId).nextTimeNote ?? '').trim()
-    if (note.length === 0) {
+    const original = (originalNote ?? '').trim()
+    if (note === original) {
       setExpandedNotesFor(null)
       return
     }
@@ -468,7 +469,6 @@ export function useWorkoutDetail(
         body: { note },
         token,
       })
-      setNotesFor(peId, (prev) => ({ ...prev, nextTimeNote: '' }))
       await fetchWorkout()
       setExpandedNotesFor(null)
     } catch (e) {

@@ -38,8 +38,7 @@ export default function WorkoutDetailScreen({
     userExercises,
     newExerciseName,
     setNewExerciseName,
-    newExerciseBodyweight,
-    setNewExerciseBodyweight,
+
     addingExercise,
     addingSetFor,
     setAddingSetFor,
@@ -329,6 +328,52 @@ export default function WorkoutDetailScreen({
                         ),
                       )}
 
+                      {pe.note_for_next_time && expandedNotesFor !== pe.id && (
+                        <View style={styles.noteReminder}>
+                          <Ionicons
+                            name="notifications"
+                            size={14}
+                            color="#d97706"
+                            style={{ marginRight: 6, marginTop: 1 }}
+                          />
+                          <Text style={styles.noteReminderText}>
+                            {pe.note_for_next_time}
+                          </Text>
+                        </View>
+                      )}
+
+                      {expandedNotesFor === pe.id && (
+                        <View style={styles.notesPanel}>
+                          {pe.note_for_next_time ? (
+                            <>
+                              <Text style={styles.notesFromLastTimeLabel}>
+                                Note from last time
+                              </Text>
+                              <View style={styles.notesFromLastTime}>
+                                <Text style={styles.notesFromLastTimeText}>
+                                  {pe.note_for_next_time}
+                                </Text>
+                              </View>
+                            </>
+                          ) : null}
+                          <TextInput
+                            style={styles.notesInput}
+                            placeholder="e.g. Increase weight to 5 lbs"
+                            placeholderTextColor="#a8a29e"
+                            clearButtonMode="while-editing"
+                            returnKeyType="done"
+                            value={getNotesFor(pe.id).nextTimeNote}
+                            onChangeText={(text) =>
+                              setNotesFor(pe.id, (prev) => ({
+                                ...prev,
+                                nextTimeNote: text,
+                              }))
+                            }
+                            onBlur={() => handleSaveNote(pe.id, pe.note_for_next_time)}
+                          />
+                        </View>
+                      )}
+
                       <View style={styles.addSetNotesColumn}>
                         {addingSetFor === pe.id && (
                           <View
@@ -421,7 +466,13 @@ export default function WorkoutDetailScreen({
                             <Text style={styles.addSetLink}>+ Add set</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            onPress={() => setExpandedNotesFor(pe.id)}
+                            onPress={() => {
+                              setNotesFor(pe.id, (prev) => ({
+                                ...prev,
+                                nextTimeNote: pe.note_for_next_time ?? '',
+                              }))
+                              setExpandedNotesFor(pe.id)
+                            }}
                             style={styles.notesLinkRow}
                           >
                             {pe.note_for_next_time ? (
@@ -437,48 +488,6 @@ export default function WorkoutDetailScreen({
                         </View>
                       </View>
 
-                      {expandedNotesFor === pe.id && (
-                        <View style={styles.notesOverlay}>
-                          <View style={styles.notesPanel}>
-                            {pe.note_for_next_time ? (
-                              <>
-                                <Text style={styles.notesFromLastTimeLabel}>
-                                  Note from last time
-                                </Text>
-                                <View style={styles.notesFromLastTime}>
-                                  <Text style={styles.notesFromLastTimeText}>
-                                    {pe.note_for_next_time}
-                                  </Text>
-                                </View>
-                              </>
-                            ) : null}
-                            <View style={styles.notesSection}>
-                              <Text style={styles.notesLabel}>
-                                Note for next time
-                              </Text>
-                              <TextInput
-                                style={styles.notesInput}
-                                placeholder="e.g. Increase weight to 5 lbs"
-                                placeholderTextColor="#a8a29e"
-                                multiline
-                                value={getNotesFor(pe.id).nextTimeNote}
-                                onChangeText={(text) =>
-                                  setNotesFor(pe.id, (prev) => ({
-                                    ...prev,
-                                    nextTimeNote: text,
-                                  }))
-                                }
-                              />
-                            </View>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.notesDoneBtn}
-                            onPress={() => handleSaveNote(pe.id)}
-                          >
-                            <Text style={styles.notesDoneText}>Done</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
                     </View>
                   </View>
                 )
@@ -521,21 +530,7 @@ export default function WorkoutDetailScreen({
                 placeholder="e.g. Bench Press"
                 placeholderTextColor="#a8a29e"
               />
-              <TouchableOpacity
-                style={styles.addExerciseCheckboxRow}
-                onPress={() => setNewExerciseBodyweight((v) => !v)}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name={newExerciseBodyweight ? 'checkbox' : 'square-outline'}
-                  size={22}
-                  color="#5A4A2F"
-                  style={styles.addExerciseCheckboxIcon}
-                />
-                <Text style={styles.addExerciseCheckboxLabel}>
-                  Bodyweight (no extra weight)
-                </Text>
-              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={handleAddExercise}
                 disabled={addingExercise || !newExerciseName.trim()}
@@ -744,19 +739,10 @@ const styles = StyleSheet.create({
   notesBellIcon: { marginRight: 4 },
   notesLink: { fontSize: 14, color: '#d97706', fontWeight: '600' },
   cardBodyWrapper: {
-    position: 'relative',
     backgroundColor: '#fff4e6',
     padding: 16,
   },
-  notesOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#fff4e6',
-  },
-  notesPanel: { marginTop: 0, padding: 16 },
+  notesPanel: { paddingTop: 8, paddingBottom: 4 },
   notesFromLastTime: {
     marginBottom: 12,
     paddingVertical: 8,
@@ -771,32 +757,30 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notesFromLastTimeText: { fontSize: 14, color: '#44403c' },
-  notesSection: { marginBottom: 12 },
-  notesLabel: {
+  noteReminder: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  noteReminderText: {
+    flex: 1,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#44403c',
-    marginBottom: 6,
+    color: '#92400e',
+    lineHeight: 18,
   },
   notesInput: {
-    height: 36,
     borderWidth: 1,
     borderColor: '#d6d3d1',
     borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 8,
     fontSize: 14,
     backgroundColor: '#fff',
-    textAlignVertical: 'top',
   },
-  notesDoneBtn: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  notesDoneText: { fontSize: 15, fontWeight: '600', color: '#d97706' },
   card: {
     padding: 16,
     borderRadius: 12,
