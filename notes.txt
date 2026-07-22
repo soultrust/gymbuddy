@@ -55,3 +55,35 @@ npx eas-cli@latest build --platform android --profile production
 then download apk from expo.dev to your phone 
 update your app.
 
+
+
+July 21, 2026 FINAL DEPLOYMENT NOTES!
+
+Here's a full rundown:
+
+* Django API (Cloud Run)
+One command from the project root — the script builds the Docker image via Cloud Build and deploys to Cloud Run with Cloud SQL + secrets wired up:
+
+./scripts/deploy-api.sh
+That script does two things:
+
+gcloud builds submit --config=cloudbuild.yaml . — builds & pushes the image
+gcloud run deploy gymbuddy-api ... — deploys with Cloud SQL, Firebase service account secret, and DATABASE_URL secret
+
+* Web (Firebase Hosting)
+The notes don't have a web deploy command captured, but since it's a Vite + Firebase Hosting setup it should be:
+
+cd gymbuddy-web
+npm run build
+firebase deploy
+
+* Mobile (Android APK via EAS)
+From gymbuddy-mobile:
+
+cd gymbuddy-mobile
+npm install
+npx eas-cli@latest login          # use your expo.dev credentials
+npx eas-cli@latest build --platform android --profile production
+Then go to expo.dev, download the APK, and sideload it onto your phone to update.
+
+One gotcha to remember: the database is Cloud SQL (PostgreSQL) — the DATABASE_URL is stored in Secret Manager as database-url:latest, so you never need to paste the password directly. The deploy script pulls it automatically.
