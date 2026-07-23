@@ -38,6 +38,7 @@ export function useWorkoutDetail(
   const [editingDate, setEditingDate] = useState(false)
   const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
   const [expandedNotesFor, setExpandedNotesFor] = useState<number | null>(null)
+  const [editingNoteFor, setEditingNoteFor] = useState<number | null>(null)
   const [exerciseNotes, setExerciseNotes] = useState<
     Record<number, { todayNotes: string; nextTimeNote: string }>
   >({})
@@ -482,7 +483,9 @@ export function useWorkoutDetail(
     const note = (getNotesFor(peId).nextTimeNote ?? '').trim()
     const original = (originalNote ?? '').trim()
     if (note === original) {
-      setExpandedNotesFor(null)
+      // Unchanged — switch to view mode if note exists, else close panel
+      setEditingNoteFor(null)
+      if (!note) setExpandedNotesFor(null)
       return
     }
     try {
@@ -492,7 +495,8 @@ export function useWorkoutDetail(
         token,
       })
       await fetchWorkout()
-      setExpandedNotesFor(null)
+      setEditingNoteFor(null)
+      if (!note) setExpandedNotesFor(null)
     } catch (e) {
       Alert.alert('Could not save note', (e as Error)?.message ?? 'Please try again.')
     }
@@ -544,6 +548,8 @@ export function useWorkoutDetail(
     setEditingDateValue,
     expandedNotesFor,
     setExpandedNotesFor,
+    editingNoteFor,
+    setEditingNoteFor,
     exerciseNotes,
     getNotesFor,
     setNotesFor,
