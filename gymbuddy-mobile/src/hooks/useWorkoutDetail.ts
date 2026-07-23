@@ -24,10 +24,13 @@ export function useWorkoutDetail(
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [newExerciseName, setNewExerciseName] = useState('')
   const [newExerciseBodyweight, setNewExerciseBodyweight] = useState(false)
+  const [newExerciseMeasureUnit, setNewExerciseMeasureUnit] = useState<'sets_reps' | 'stopwatch'>('sets_reps')
   const [addingExercise, setAddingExercise] = useState(false)
   const [addingSetFor, setAddingSetFor] = useState<number | null>(null)
   const [newSetReps, setNewSetReps] = useState('1')
   const [newSetWeight, setNewSetWeight] = useState('')
+  const [newSetMinutes, setNewSetMinutes] = useState('0')
+  const [newSetSeconds, setNewSetSeconds] = useState('0')
   const [editingTitle, setEditingTitle] = useState(false)
   const [editingTitleValue, setEditingTitleValue] = useState('')
   const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null)
@@ -35,6 +38,8 @@ export function useWorkoutDetail(
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
   const [editingSetReps, setEditingSetReps] = useState('')
   const [editingSetWeight, setEditingSetWeight] = useState('')
+  const [editingSetMinutes, setEditingSetMinutes] = useState('0')
+  const [editingSetSeconds, setEditingSetSeconds] = useState('0')
   const [editingDate, setEditingDate] = useState(false)
   const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
   const [expandedNotesFor, setExpandedNotesFor] = useState<number | null>(null)
@@ -153,28 +158,47 @@ export function useWorkoutDetail(
     if (!token || !workout) return
     const nextOrder =
       currentSets.length > 0 ? Math.max(...currentSets.map((s) => s.order)) + 1 : 1
-    const reps = parseReps(newSetReps)
-    if (reps == null) return
-    try {
-      const isBodyweight = workout.exercises.find(
-        (e) => e.id === performedExerciseId,
-      )?.is_bodyweight
-      await apiRequest(`/performed-exercises/${performedExerciseId}/sets/`, {
-        method: 'POST',
-        token,
-        body: {
-          order: nextOrder,
-          reps,
-          weight: isBodyweight ? 0 : newSetWeight ? parseFloat(newSetWeight) : null,
-          notes: '',
-        },
-      })
-      if (!keepAdding) setAddingSetFor(null)
-      setNewSetReps('1')
-      setNewSetWeight('')
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not add set', e instanceof Error ? e.message : 'Please try again.')
+    const pe = workout.exercises.find((e) => e.id === performedExerciseId)
+
+    if (pe?.measure_unit === 'stopwatch') {
+      const mins = parseInt(newSetMinutes || '0', 10)
+      const secs = parseInt(newSetSeconds || '0', 10)
+      const totalSeconds = mins * 60 + secs
+      if (totalSeconds <= 0) return
+      try {
+        await apiRequest(`/performed-exercises/${performedExerciseId}/sets/`, {
+          method: 'POST',
+          token,
+          body: { order: nextOrder, reps: totalSeconds, weight: null, notes: '' },
+        })
+        if (!keepAdding) setAddingSetFor(null)
+        setNewSetMinutes('0')
+        setNewSetSeconds('0')
+        await fetchWorkout()
+      } catch (e) {
+        Alert.alert('Could not add set', e instanceof Error ? e.message : 'Please try again.')
+      }
+    } else {
+      const reps = parseReps(newSetReps)
+      if (reps == null) return
+      try {
+        await apiRequest(`/performed-exercises/${performedExerciseId}/sets/`, {
+          method: 'POST',
+          token,
+          body: {
+            order: nextOrder,
+            reps,
+            weight: pe?.is_bodyweight ? 0 : newSetWeight ? parseFloat(newSetWeight) : null,
+            notes: '',
+          },
+        })
+        if (!keepAdding) setAddingSetFor(null)
+        setNewSetReps('1')
+        setNewSetWeight('')
+        await fetchWorkout()
+      } catch (e) {
+        Alert.alert('Could not add set', e instanceof Error ? e.message : 'Please try again.')
+      }
     }
   }
 
@@ -200,11 +224,19 @@ export function useWorkoutDetail(
   }
 
   const handleSaveSet = async (set: SetEntry) => {
-    const reps = parseReps(editingSetReps)
-    if (reps == null) return
     const pe = workout?.exercises.find((e) => e.sets.some((ss) => ss.id === set.id))
-    const weight = pe?.is_bodyweight ? '0' : editingSetWeight
-    await saveSetToApi(set, reps, weight, true)
+    if (pe?.measure_unit === 'stopwatch') {
+      const mins = parseInt(editingSetMinutes || '0', 10)
+      const secs = parseInt(editingSetSeconds || '0', 10)
+      const totalSeconds = mins * 60 + secs
+      if (totalSeconds < 0) return
+      await saveSetToApi(set, totalSeconds, '', true)
+    } else {
+      const reps = parseReps(editingSetReps)
+      if (reps == null) return
+      const weight = pe?.is_bodyweight ? '0' : editingSetWeight
+      await saveSetToApi(set, reps, weight, true)
+    }
   }
 
   const handleSaveDate = async (dateToSave?: Date) => {
@@ -331,6 +363,7 @@ export function useWorkoutDetail(
     if (!token || !newExerciseName.trim() || !workout) return
     setAddingExercise(true)
     const wasBodyweight = newExerciseBodyweight
+    const wasMeasureUnit = newExerciseMeasureUnit
     try {
       const exercises = workout.exercises ?? []
       const nextOrder =
@@ -345,13 +378,16 @@ export function useWorkoutDetail(
             order: nextOrder,
             user_preferred_name: '',
             is_bodyweight: wasBodyweight,
+            measure_unit: wasMeasureUnit,
           },
         },
       )
       setNewExerciseName('')
       setNewExerciseBodyweight(false)
+      setNewExerciseMeasureUnit('sets_reps')
       if (created) {
         created.is_bodyweight = wasBodyweight
+        created.measure_unit = wasMeasureUnit
         setWorkout((prev) => {
           if (!prev) return prev
           const next = [...(prev.exercises || []), created].sort(
@@ -409,7 +445,12 @@ export function useWorkoutDetail(
         {
           method: 'POST',
           token,
-          body: { exercise: exerciseId, order: nextOrder, user_preferred_name: userPreferredName },
+          body: {
+            exercise: exerciseId,
+            order: nextOrder,
+            user_preferred_name: userPreferredName,
+            measure_unit: last?.measure_unit ?? 'sets_reps',
+          },
         },
       )
 
@@ -521,6 +562,8 @@ export function useWorkoutDetail(
     setNewExerciseName,
     newExerciseBodyweight,
     setNewExerciseBodyweight,
+    newExerciseMeasureUnit,
+    setNewExerciseMeasureUnit,
     addingExercise,
     addingSetFor,
     setAddingSetFor,
@@ -528,6 +571,10 @@ export function useWorkoutDetail(
     setNewSetReps,
     newSetWeight,
     setNewSetWeight,
+    newSetMinutes,
+    setNewSetMinutes,
+    newSetSeconds,
+    setNewSetSeconds,
     editingTitle,
     setEditingTitle,
     editingTitleValue,
@@ -542,6 +589,10 @@ export function useWorkoutDetail(
     setEditingSetReps,
     editingSetWeight,
     setEditingSetWeight,
+    editingSetMinutes,
+    setEditingSetMinutes,
+    editingSetSeconds,
+    setEditingSetSeconds,
     editingDate,
     setEditingDate,
     editingDateValue,

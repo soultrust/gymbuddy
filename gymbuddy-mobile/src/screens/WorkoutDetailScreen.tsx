@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Animated,
   Platform,
@@ -38,7 +38,8 @@ export default function WorkoutDetailScreen({
     userExercises,
     newExerciseName,
     setNewExerciseName,
-
+    newExerciseMeasureUnit,
+    setNewExerciseMeasureUnit,
     addingExercise,
     addingSetFor,
     setAddingSetFor,
@@ -46,6 +47,10 @@ export default function WorkoutDetailScreen({
     setNewSetReps,
     newSetWeight,
     setNewSetWeight,
+    newSetMinutes,
+    setNewSetMinutes,
+    newSetSeconds,
+    setNewSetSeconds,
     editingTitle,
     setEditingTitle,
     editingTitleValue,
@@ -60,6 +65,10 @@ export default function WorkoutDetailScreen({
     setEditingSetReps,
     editingSetWeight,
     setEditingSetWeight,
+    editingSetMinutes,
+    setEditingSetMinutes,
+    editingSetSeconds,
+    setEditingSetSeconds,
     editingDate,
     setEditingDate,
     editingDateValue,
@@ -88,6 +97,16 @@ export default function WorkoutDetailScreen({
     dismissEditSet,
     retry,
   } = useWorkoutDetail(workoutId, token, navigation.goBack)
+
+  const [measureUnitDropdownOpen, setMeasureUnitDropdownOpen] = useState(false)
+
+  const formatDuration = (totalSeconds: number) => {
+    const total = Math.round(Number(totalSeconds))
+    const mins = Math.floor(total / 60)
+    const secs = total % 60
+    if (mins === 0) return `${secs}s`
+    return `${mins}m ${secs}s`
+  }
 
   if (loading) {
     return <LoadingSpinner />
@@ -270,62 +289,93 @@ export default function WorkoutDetailScreen({
                                 </TouchableOpacity>
                                 <Text style={styles.setLabel}>Set {index + 1}</Text>
                               </View>
-                              <View style={styles.stepper}>
-                                <TouchableOpacity
-                                  style={styles.stepperBtn}
-                                  onPress={() => {
-                                    const v = stepRepsValue(editingSetReps, 'prev')
-                                    const next = String(v)
-                                    setEditingSetReps(next)
-                                    saveSetToApi(
-                                      s,
-                                      v,
-                                      isBodyweight ? '0' : editingSetWeight,
-                                      false,
-                                    )
-                                  }}
-                                >
-                                  <ArrowIcon direction="left" color="#44403c" />
-                                </TouchableOpacity>
-                                <TextInput
-                                  style={styles.stepperValue}
-                                  value={editingSetReps}
-                                  onChangeText={(t) =>
-                                    setRepsDecimal(setEditingSetReps, t)
-                                  }
-                                  onBlur={() => handleSaveSet(s)}
-                                  keyboardType="decimal-pad"
-                                />
-                                <TouchableOpacity
-                                  style={styles.stepperBtn}
-                                  onPress={() => {
-                                    const v = stepRepsValue(editingSetReps, 'next')
-                                    const next = String(v)
-                                    setEditingSetReps(next)
-                                    saveSetToApi(
-                                      s,
-                                      v,
-                                      isBodyweight ? '0' : editingSetWeight,
-                                      false,
-                                    )
-                                  }}
-                                >
-                                  <ArrowIcon direction="right" color="#44403c" />
-                                </TouchableOpacity>
-                              </View>
-                              {!isBodyweight && (
-                                <View style={styles.setEditRight}>
-                                  <TextInput
-                                    style={styles.setInput}
-                                    value={editingSetWeight}
-                                    onChangeText={(t) =>
-                                      setWeightDecimal(setEditingSetWeight, t)
-                                    }
-                                    onBlur={() => handleSaveSet(s)}
-                                    placeholder="lbs"
-                                    keyboardType="decimal-pad"
-                                  />
+                              {pe.measure_unit === 'stopwatch' ? (
+                                <View style={styles.stopwatchEditContainer}>
+                                  <View style={styles.stopwatchInputRow}>
+                                    <Text style={styles.stopwatchFieldLabel}>minutes</Text>
+                                    <TextInput
+                                      style={[styles.setInput, styles.stopwatchInput]}
+                                      value={editingSetMinutes}
+                                      onChangeText={(t) => setEditingSetMinutes(t.replace(/[^0-9]/g, ''))}
+                                      onBlur={() => handleSaveSet(s)}
+                                      keyboardType="number-pad"
+                                      placeholder="0"
+                                      placeholderTextColor="#78716c"
+                                    />
+                                  </View>
+                                  <View style={styles.stopwatchInputRow}>
+                                    <Text style={styles.stopwatchFieldLabel}>seconds</Text>
+                                    <TextInput
+                                      style={[styles.setInput, styles.stopwatchInput]}
+                                      value={editingSetSeconds}
+                                      onChangeText={(t) => setEditingSetSeconds(t.replace(/[^0-9]/g, ''))}
+                                      onBlur={() => handleSaveSet(s)}
+                                      keyboardType="number-pad"
+                                      placeholder="0"
+                                      placeholderTextColor="#78716c"
+                                    />
+                                  </View>
                                 </View>
+                              ) : (
+                                <>
+                                  <View style={styles.stepper}>
+                                    <TouchableOpacity
+                                      style={styles.stepperBtn}
+                                      onPress={() => {
+                                        const v = stepRepsValue(editingSetReps, 'prev')
+                                        const next = String(v)
+                                        setEditingSetReps(next)
+                                        saveSetToApi(
+                                          s,
+                                          v,
+                                          isBodyweight ? '0' : editingSetWeight,
+                                          false,
+                                        )
+                                      }}
+                                    >
+                                      <ArrowIcon direction="left" color="#44403c" />
+                                    </TouchableOpacity>
+                                    <TextInput
+                                      style={styles.stepperValue}
+                                      value={editingSetReps}
+                                      onChangeText={(t) =>
+                                        setRepsDecimal(setEditingSetReps, t)
+                                      }
+                                      onBlur={() => handleSaveSet(s)}
+                                      keyboardType="decimal-pad"
+                                    />
+                                    <TouchableOpacity
+                                      style={styles.stepperBtn}
+                                      onPress={() => {
+                                        const v = stepRepsValue(editingSetReps, 'next')
+                                        const next = String(v)
+                                        setEditingSetReps(next)
+                                        saveSetToApi(
+                                          s,
+                                          v,
+                                          isBodyweight ? '0' : editingSetWeight,
+                                          false,
+                                        )
+                                      }}
+                                    >
+                                      <ArrowIcon direction="right" color="#44403c" />
+                                    </TouchableOpacity>
+                                  </View>
+                                  {!isBodyweight && (
+                                    <View style={styles.setEditRight}>
+                                      <TextInput
+                                        style={styles.setInput}
+                                        value={editingSetWeight}
+                                        onChangeText={(t) =>
+                                          setWeightDecimal(setEditingSetWeight, t)
+                                        }
+                                        onBlur={() => handleSaveSet(s)}
+                                        placeholder="lbs"
+                                        keyboardType="decimal-pad"
+                                      />
+                                    </View>
+                                  )}
+                                </>
                               )}
                             </Animated.View>
                           </TouchableWithoutFeedback>
@@ -339,22 +389,38 @@ export default function WorkoutDetailScreen({
                               onPress={() => {
                                 setAddingSetFor(null)
                                 setEditingSetId(s.id)
-                                setEditingSetReps(formatNumber(s.reps))
-                                setEditingSetWeight(formatWeight(s.weight))
+                                if (pe.measure_unit === 'stopwatch') {
+                                  const total = Math.round(Number(s.reps))
+                                  setEditingSetMinutes(String(Math.floor(total / 60)))
+                                  setEditingSetSeconds(String(total % 60))
+                                } else {
+                                  setEditingSetReps(formatNumber(s.reps))
+                                  setEditingSetWeight(formatWeight(s.weight))
+                                }
                               }}
                               activeOpacity={0.7}
                             >
-                              <View style={styles.setRepsCentered}>
-                                <Text style={styles.setValue}>
-                                  {formatNumber(s.reps)} reps
-                                </Text>
-                              </View>
-                              {!isBodyweight && (
-                                <Text style={styles.setValue}>
-                                  {formatWeight(s.weight)
-                                    ? `${formatWeight(s.weight)} lbs`
-                                    : '—'}
-                                </Text>
+                              {pe.measure_unit === 'stopwatch' ? (
+                                <View style={styles.setRepsCentered}>
+                                  <Text style={styles.setValue}>
+                                    {formatDuration(Number(s.reps))}
+                                  </Text>
+                                </View>
+                              ) : (
+                                <>
+                                  <View style={styles.setRepsCentered}>
+                                    <Text style={styles.setValue}>
+                                      {formatNumber(s.reps)} reps
+                                    </Text>
+                                  </View>
+                                  {!isBodyweight && (
+                                    <Text style={styles.setValue}>
+                                      {formatWeight(s.weight)
+                                        ? `${formatWeight(s.weight)} lbs`
+                                        : '—'}
+                                    </Text>
+                                  )}
+                                </>
                               )}
                             </TouchableOpacity>
                           </View>
@@ -425,73 +491,93 @@ export default function WorkoutDetailScreen({
 
                       <View style={styles.addSetNotesColumn}>
                         {addingSetFor === pe.id && (
-                          <View
-                            style={[styles.addSetRow, styles.addSetRowEditing]}
-                          >
-                            <TouchableOpacity
-                              onPress={() => setAddingSetFor(null)}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              style={styles.addSetCancelBtn}
-                            >
-                              <Ionicons
-                                name="close-outline"
-                                size={24}
-                                color="#1c1917"
-                              />
-                            </TouchableOpacity>
-                            <Text style={styles.addSetLabel}>
-                              Set {pe.sets.length + 1}
-                            </Text>
-                            <View style={styles.addSetStepperCenter}>
-                              <View style={styles.stepper}>
+                          pe.measure_unit === 'stopwatch' ? (
+                            <View style={[styles.addSetRowStopwatch, styles.addSetRowEditing]}>
+                              <View style={styles.addSetTopRow}>
                                 <TouchableOpacity
-                                  style={styles.stepperBtn}
-                                  onPress={() => {
-                                    const v = stepRepsValue(newSetReps, 'prev')
-                                    setNewSetReps(String(v))
-                                  }}
+                                  onPress={() => setAddingSetFor(null)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  style={styles.addSetCancelBtn}
                                 >
-                                  <ArrowIcon direction="left" color="#1c1917" />
+                                  <Ionicons name="close-outline" size={24} color="#1c1917" />
                                 </TouchableOpacity>
+                                <Text style={styles.addSetLabel}>Set {pe.sets.length + 1}</Text>
+                              </View>
+                              <View style={styles.stopwatchInputRow}>
+                                <Text style={styles.stopwatchFieldLabel}>minutes</Text>
                                 <TextInput
-                                  style={[
-                                    styles.stepperValue,
-                                    { color: '#1c1917' },
-                                  ]}
-                                  value={newSetReps}
-                                  onChangeText={(t) =>
-                                    setRepsDecimal(setNewSetReps, t)
-                                  }
-                                  keyboardType="decimal-pad"
+                                  style={[styles.inputSmall, styles.addSetInputEditing, styles.stopwatchInput]}
+                                  value={newSetMinutes}
+                                  onChangeText={(t) => setNewSetMinutes(t.replace(/[^0-9]/g, ''))}
+                                  keyboardType="number-pad"
+                                  placeholder="0"
+                                  placeholderTextColor="#78716c"
                                 />
-                                <TouchableOpacity
-                                  style={styles.stepperBtn}
-                                  onPress={() => {
-                                    const v = stepRepsValue(newSetReps, 'next')
-                                    setNewSetReps(String(v))
-                                  }}
-                                >
-                                  <ArrowIcon direction="right" color="#1c1917" />
-                                </TouchableOpacity>
+                              </View>
+                              <View style={styles.stopwatchInputRow}>
+                                <Text style={styles.stopwatchFieldLabel}>seconds</Text>
+                                <TextInput
+                                  style={[styles.inputSmall, styles.addSetInputEditing, styles.stopwatchInput]}
+                                  value={newSetSeconds}
+                                  onChangeText={(t) => setNewSetSeconds(t.replace(/[^0-9]/g, ''))}
+                                  onBlur={() => handleAddSet(pe.id, pe.sets)}
+                                  keyboardType="number-pad"
+                                  placeholder="0"
+                                  placeholderTextColor="#78716c"
+                                />
                               </View>
                             </View>
-                            {!isBodyweight && (
-                              <TextInput
-                                style={[
-                                  styles.inputSmall,
-                                  styles.addSetInputEditing,
-                                ]}
-                                value={newSetWeight}
-                                onChangeText={(t) =>
-                                  setWeightDecimal(setNewSetWeight, t)
-                                }
-                                onBlur={() => handleAddSet(pe.id, pe.sets)}
-                                placeholder="Weight"
-                                placeholderTextColor="#78716c"
-                                keyboardType="decimal-pad"
-                              />
-                            )}
-                          </View>
+                          ) : (
+                            <View style={[styles.addSetRow, styles.addSetRowEditing]}>
+                              <TouchableOpacity
+                                onPress={() => setAddingSetFor(null)}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                style={styles.addSetCancelBtn}
+                              >
+                                <Ionicons name="close-outline" size={24} color="#1c1917" />
+                              </TouchableOpacity>
+                              <Text style={styles.addSetLabel}>Set {pe.sets.length + 1}</Text>
+                              <View style={styles.addSetStepperCenter}>
+                                <View style={styles.stepper}>
+                                  <TouchableOpacity
+                                    style={styles.stepperBtn}
+                                    onPress={() => {
+                                      const v = stepRepsValue(newSetReps, 'prev')
+                                      setNewSetReps(String(v))
+                                    }}
+                                  >
+                                    <ArrowIcon direction="left" color="#1c1917" />
+                                  </TouchableOpacity>
+                                  <TextInput
+                                    style={[styles.stepperValue, { color: '#1c1917' }]}
+                                    value={newSetReps}
+                                    onChangeText={(t) => setRepsDecimal(setNewSetReps, t)}
+                                    keyboardType="decimal-pad"
+                                  />
+                                  <TouchableOpacity
+                                    style={styles.stepperBtn}
+                                    onPress={() => {
+                                      const v = stepRepsValue(newSetReps, 'next')
+                                      setNewSetReps(String(v))
+                                    }}
+                                  >
+                                    <ArrowIcon direction="right" color="#1c1917" />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                              {!isBodyweight && (
+                                <TextInput
+                                  style={[styles.inputSmall, styles.addSetInputEditing]}
+                                  value={newSetWeight}
+                                  onChangeText={(t) => setWeightDecimal(setNewSetWeight, t)}
+                                  onBlur={() => handleAddSet(pe.id, pe.sets)}
+                                  placeholder="Weight"
+                                  placeholderTextColor="#78716c"
+                                  keyboardType="decimal-pad"
+                                />
+                              )}
+                            </View>
+                          )
                         )}
                         <View
                           style={[
@@ -508,8 +594,19 @@ export default function WorkoutDetailScreen({
                               setEditingSetId(null)
                               setAddingSetFor(pe.id)
                               const last = pe.sets[pe.sets.length - 1]
-                              setNewSetReps('1')
-                              if (last) setNewSetWeight(formatWeight(last.weight))
+                              if (pe.measure_unit === 'stopwatch') {
+                                if (last) {
+                                  const total = Math.round(Number(last.reps))
+                                  setNewSetMinutes(String(Math.floor(total / 60)))
+                                  setNewSetSeconds(String(total % 60))
+                                } else {
+                                  setNewSetMinutes('0')
+                                  setNewSetSeconds('0')
+                                }
+                              } else {
+                                setNewSetReps('1')
+                                if (last) setNewSetWeight(formatWeight(last.weight))
+                              }
                             }}
                           >
                             <Text style={styles.addSetLink}>+ Add set</Text>
@@ -567,6 +664,8 @@ export default function WorkoutDetailScreen({
 
             <View style={[styles.addExerciseSection, styles.card]}>
               <Text style={styles.addPastExerciseLabel}>Add New Exercise</Text>
+
+              <Text style={styles.addExerciseFieldLabel}>Title of Exercise</Text>
               <TextInput
                 style={[styles.addExerciseInput, styles.addExerciseInputFull]}
                 value={newExerciseName}
@@ -574,6 +673,48 @@ export default function WorkoutDetailScreen({
                 placeholder="e.g. Bench Press"
                 placeholderTextColor="#a8a29e"
               />
+
+              <Text style={styles.addExerciseFieldLabel}>Measure Unit</Text>
+              <TouchableOpacity
+                style={styles.measureUnitDropdownTrigger}
+                onPress={() => setMeasureUnitDropdownOpen((o) => !o)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.measureUnitDropdownValue}>
+                  {newExerciseMeasureUnit === 'stopwatch' ? 'Stopwatch' : 'Sets / Reps'}
+                </Text>
+                <Ionicons
+                  name={measureUnitDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color="#78716c"
+                />
+              </TouchableOpacity>
+              {measureUnitDropdownOpen && (
+                <View style={styles.measureUnitOptions}>
+                  {(['sets_reps', 'stopwatch'] as const).map((opt) => (
+                    <TouchableOpacity
+                      key={opt}
+                      style={[
+                        styles.measureUnitOption,
+                        newExerciseMeasureUnit === opt && styles.measureUnitOptionSelected,
+                      ]}
+                      onPress={() => {
+                        setNewExerciseMeasureUnit(opt)
+                        setMeasureUnitDropdownOpen(false)
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.measureUnitOptionText,
+                          newExerciseMeasureUnit === opt && styles.measureUnitOptionTextSelected,
+                        ]}
+                      >
+                        {opt === 'stopwatch' ? 'Stopwatch' : 'Sets / Reps'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
               <TouchableOpacity
                 onPress={handleAddExercise}
@@ -922,5 +1063,80 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
     textAlign: 'center',
+  },
+  addExerciseFieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#78716c',
+    textTransform: 'uppercase',
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  measureUnitDropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff4e6',
+  },
+  measureUnitDropdownValue: {
+    fontSize: 16,
+    color: '#1c1917',
+  },
+  measureUnitOptions: {
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  measureUnitOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+  },
+  measureUnitOptionSelected: {
+    backgroundColor: '#fff4e6',
+  },
+  measureUnitOptionText: {
+    fontSize: 15,
+    color: '#44403c',
+  },
+  measureUnitOptionTextSelected: {
+    color: '#d97706',
+    fontWeight: '600',
+  },
+  stopwatchEditContainer: {
+    flex: 1,
+    gap: 6,
+  },
+  stopwatchInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  stopwatchFieldLabel: {
+    fontSize: 14,
+    color: '#44403c',
+    fontWeight: '500',
+    flex: 1,
+  },
+  stopwatchInput: {
+    width: 72,
+    textAlign: 'center',
+  },
+  addSetRowStopwatch: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  addSetTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 })

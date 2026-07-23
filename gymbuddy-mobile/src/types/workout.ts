@@ -24,6 +24,7 @@ export type PerformedExercise = {
   user_preferred_name?: string
   order: number
   is_bodyweight?: boolean
+  measure_unit?: 'sets_reps' | 'stopwatch'
   sets: SetEntry[]
   note_for_next_time?: string
 }
@@ -48,6 +49,7 @@ export type TemplateExercise = {
   exercise: Exercise
   user_preferred_name?: string
   order: number
+  measure_unit?: 'sets_reps' | 'stopwatch'
   last_sets: TemplateSetEntry[]
 }
 

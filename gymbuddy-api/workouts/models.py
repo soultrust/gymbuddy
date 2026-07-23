@@ -68,9 +68,19 @@ class PerformedExercise(models.Model):
         on_delete=models.PROTECT,
         related_name="performed_instances",
     )
+    MEASURE_UNIT_CHOICES = [
+        ('sets_reps', 'Sets/Reps'),
+        ('stopwatch', 'Stopwatch'),
+    ]
+
     user_preferred_name = models.CharField(max_length=100, blank=True)
     order = models.PositiveSmallIntegerField()  # position in the workout: 1,2,3,...
     is_bodyweight = models.BooleanField(default=False)
+    measure_unit = models.CharField(
+        max_length=20,
+        choices=MEASURE_UNIT_CHOICES,
+        default='sets_reps',
+    )
 
     class Meta:
         ordering = ["order"]

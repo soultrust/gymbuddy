@@ -82,6 +82,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
                 user_preferred_name=pe.user_preferred_name or "",
                 order=pe.order,
                 is_bodyweight=pe.is_bodyweight,
+                measure_unit=pe.measure_unit,
             )
             for s in pe.sets.all().order_by("order"):
                 SetEntry.objects.create(
@@ -204,6 +205,11 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
         data = dict(request.data)
         exercise_name = data.pop("exercise_name", None)
         is_bodyweight = data.pop("is_bodyweight", False)
+        measure_unit = data.pop("measure_unit", "sets_reps")
+        if isinstance(measure_unit, list):
+            measure_unit = measure_unit[0] if measure_unit else "sets_reps"
+        if measure_unit not in ("sets_reps", "stopwatch"):
+            measure_unit = "sets_reps"
         if exercise_name:
             name = (
                 exercise_name[0]
@@ -218,7 +224,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             data["exercise"] = exercise.id
         serializer = PerformedExerciseSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(session=session, is_bodyweight=bool(is_bodyweight))
+            serializer.save(session=session, is_bodyweight=bool(is_bodyweight), measure_unit=measure_unit)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

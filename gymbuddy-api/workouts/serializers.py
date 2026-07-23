@@ -44,7 +44,7 @@ class PerformedExerciseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PerformedExercise
-        fields = ["id", "exercise", "user_preferred_name", "order", "is_bodyweight", "sets", "note_for_next_time"]
+        fields = ["id", "exercise", "user_preferred_name", "order", "is_bodyweight", "measure_unit", "sets", "note_for_next_time"]
 
     def get_note_for_next_time(self, instance):
         # Fast path: annotation set by the viewset's annotated queryset (avoids N+1).
@@ -98,4 +98,4 @@ class TemplateExerciseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PerformedExercise
-        fields = ["exercise", "user_preferred_name", "order", "last_sets"]
+        fields = ["exercise", "user_preferred_name", "order", "measure_unit", "last_sets"]
