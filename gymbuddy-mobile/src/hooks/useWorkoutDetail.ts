@@ -28,6 +28,8 @@ export function useWorkoutDetail(
   const [addingSetFor, setAddingSetFor] = useState<number | null>(null)
   const [newSetReps, setNewSetReps] = useState('1')
   const [newSetWeight, setNewSetWeight] = useState('')
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editingTitleValue, setEditingTitleValue] = useState('')
   const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null)
   const [editingExerciseName, setEditingExerciseName] = useState('')
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
@@ -440,6 +442,26 @@ export function useWorkoutDetail(
     }
   }
 
+  const handleSaveTitle = async () => {
+    if (!token || !workout) return
+    const name = editingTitleValue.trim()
+    if (name === (workout.name ?? '').trim()) {
+      setEditingTitle(false)
+      return
+    }
+    try {
+      await apiRequest(`/workouts/${workoutId}/`, {
+        method: 'PATCH',
+        token,
+        body: { name },
+      })
+      setEditingTitle(false)
+      await fetchWorkout()
+    } catch (e) {
+      Alert.alert('Could not save title', (e as Error)?.message ?? 'Please try again.')
+    }
+  }
+
   const handleSaveExerciseName = async (pe: PerformedExercise) => {
     if (!token) return
     const name = editingExerciseName.trim()
@@ -502,6 +524,10 @@ export function useWorkoutDetail(
     setNewSetReps,
     newSetWeight,
     setNewSetWeight,
+    editingTitle,
+    setEditingTitle,
+    editingTitleValue,
+    setEditingTitleValue,
     editingExerciseId,
     setEditingExerciseId,
     editingExerciseName,
@@ -539,6 +565,7 @@ export function useWorkoutDetail(
     handleDeleteExercise,
     confirmDeleteExercise,
     handleDeleteWorkout,
+    handleSaveTitle,
     handleSaveExerciseName,
     handleAddExercise,
     handleAddPastExercise,

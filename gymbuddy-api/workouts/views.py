@@ -95,7 +95,6 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = dict(request.data)
         template_session_id = data.pop("template_session_id", None)
-        data.pop("name", None)  # do not save session name to database
         if template_session_id is not None:
             try:
                 template_session_id = int(template_session_id)

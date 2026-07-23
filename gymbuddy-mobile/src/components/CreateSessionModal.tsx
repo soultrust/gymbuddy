@@ -38,6 +38,7 @@ export default function CreateSessionModal({
   const [template, setTemplate] = useState<TemplateExercise[]>([])
   const [createDate, setCreateDate] = useState(() => new Date())
   const [showDatePicker, setShowDatePicker] = useState(false)
+  const [createTitle, setCreateTitle] = useState('')
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
@@ -58,7 +59,15 @@ export default function CreateSessionModal({
   useEffect(() => {
     if (visible) {
       fetchTemplate()
-      setCreateDate(new Date())
+      const today = new Date()
+      setCreateDate(today)
+      setCreateTitle(
+        today.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+      )
       setCreateNotes('')
       setCreateError(null)
       setTemplateSource('previous')
@@ -81,8 +90,9 @@ export default function CreateSessionModal({
     setCreateSubmitting(true)
     try {
       const dateISO = createDate.toISOString().slice(0, 10)
-      const body: { date: string; notes: string; template_session_id?: number } = {
+      const body: { date: string; name: string; notes: string; template_session_id?: number } = {
         date: `${dateISO}T12:00:00.000Z`,
+        name: createTitle.trim(),
         notes: createNotes.trim() || '',
       }
       if (templateSource === 'another' && selectedSessionId != null) {
@@ -287,6 +297,17 @@ export default function CreateSessionModal({
             </TouchableOpacity>
 
             <View style={styles.templateSectionSpacer} />
+
+            <Text style={styles.inputLabel}>Title</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={createTitle}
+              onChangeText={setCreateTitle}
+              placeholder="e.g. Jul 23, 2026"
+              placeholderTextColor="#a8a29e"
+              editable={!createSubmitting}
+              returnKeyType="done"
+            />
 
             <Text style={styles.inputLabel}>Date</Text>
             <TouchableOpacity

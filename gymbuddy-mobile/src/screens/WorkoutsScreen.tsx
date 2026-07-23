@@ -258,7 +258,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   >
                     <View style={styles.tdTitle}>
                       <Text style={styles.rowTitle} numberOfLines={1}>
-                        {formatMonthDay(item.date)}
+                        {item.name || formatMonthDay(item.date)}
                       </Text>
                     </View>
                     <View style={styles.tdExercise}>

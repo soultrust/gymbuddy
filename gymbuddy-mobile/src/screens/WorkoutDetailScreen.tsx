@@ -46,6 +46,10 @@ export default function WorkoutDetailScreen({
     setNewSetReps,
     newSetWeight,
     setNewSetWeight,
+    editingTitle,
+    setEditingTitle,
+    editingTitleValue,
+    setEditingTitleValue,
     editingExerciseId,
     setEditingExerciseId,
     editingExerciseName,
@@ -74,6 +78,7 @@ export default function WorkoutDetailScreen({
     confirmDeleteSet,
     confirmDeleteExercise,
     handleDeleteWorkout,
+    handleSaveTitle,
     handleSaveExerciseName,
     handleAddExercise,
     handleAddPastExercise,
@@ -110,6 +115,33 @@ export default function WorkoutDetailScreen({
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backBtn}>← Back</Text>
         </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          {editingTitle ? (
+            <TextInput
+              style={styles.titleInput}
+              value={editingTitleValue}
+              onChangeText={setEditingTitleValue}
+              onBlur={handleSaveTitle}
+              onSubmitEditing={handleSaveTitle}
+              autoFocus
+              returnKeyType="done"
+              selectTextOnFocus
+            />
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                setEditingTitle(true)
+                setEditingTitleValue(workout.name || formatFullDate(workout.date))
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.title} numberOfLines={1}>
+                {workout.name || formatFullDate(workout.date)}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {editingDate ? (
           <View style={styles.dateEditContainer}>
             <DateTimePicker
@@ -151,9 +183,8 @@ export default function WorkoutDetailScreen({
               setEditingDateValue(new Date(workout.date))
             }}
             activeOpacity={0.7}
-            style={styles.titleContainer}
           >
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={styles.dateSubtitle} numberOfLines={1}>
               {formatFullDate(workout.date)}
             </Text>
           </TouchableOpacity>
@@ -591,6 +622,15 @@ const styles = StyleSheet.create({
   },
   titleContainer: { flex: 1 },
   title: { fontSize: 20, fontWeight: 'bold', color: '#1c1917' },
+  titleInput: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1c1917',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f59e0b',
+    paddingVertical: 0,
+  },
+  dateSubtitle: { fontSize: 13, color: '#78716c', marginTop: 2 },
   deleteBtn: { marginLeft: 16, padding: 4 },
   dateEditContainer: { flex: 1, alignItems: 'center' },
   dateEditActions: { flexDirection: 'row', gap: 16, marginTop: 16 },
