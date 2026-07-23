@@ -635,6 +635,7 @@ export default function WorkoutDetailScreen({
               })
             )}
 
+            <View style={styles.addSectionsZone}>
             {userExercises.length > 0 && (
               <View style={[styles.addPastExerciseSection, styles.card]}>
                 <Text style={styles.addPastExerciseLabel}>
@@ -728,6 +729,7 @@ export default function WorkoutDetailScreen({
               >
                 <Text style={styles.addExerciseBtnText}>Add</Text>
               </TouchableOpacity>
+            </View>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -1014,7 +1016,14 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  addPastExerciseSection: { marginTop: 24 },
+  addSectionsZone: {
+    marginHorizontal: -24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 8,
+    backgroundColor: colors.tanDark,
+  },
+  addPastExerciseSection: { marginTop: 0 },
   addPastExerciseLabel: {
     fontSize: 12,
     fontWeight: '600',

@@ -15,6 +15,7 @@ export const colors = {
   // Brown palette
   brown900: '#5A4A2F',
   tan: '#c9a882',
+  tanDark: '#9e6e38',
 
   // Stone palette (warm grays)
   stone900: '#1c1917',
