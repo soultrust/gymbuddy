@@ -126,15 +126,28 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def user_exercises(self, request):
         """GET /api/v1/workouts/user_exercises/ - distinct exercises the user has ever performed."""
+        latest_preferred_name = Subquery(
+            PerformedExercise.objects.filter(
+                session__user=request.user,
+                exercise=OuterRef("pk"),
+                user_preferred_name__gt="",
+            )
+            .order_by("-session__date")
+            .values("user_preferred_name")[:1]
+        )
         exercises = (
             Exercise.objects.filter(
                 performed_instances__session__user=request.user
             )
             .distinct()
+            .annotate(preferred_name=latest_preferred_name)
             .order_by("name")
         )
-        serializer = ExerciseSerializer(exercises, many=True)
-        return Response(serializer.data)
+        result = [
+            {"id": ex.id, "name": ex.preferred_name or ex.name}
+            for ex in exercises
+        ]
+        return Response(result)
 
     @action(detail=False, methods=["get"], url_path="last_exercise_performance")
     def last_exercise_performance(self, request):
