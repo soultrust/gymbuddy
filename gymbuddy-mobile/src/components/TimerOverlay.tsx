@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import Svg, { Circle } from 'react-native-svg'
+import Svg, { Circle, Path } from 'react-native-svg'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as DocumentPicker from 'expo-document-picker'
 import { useTimer } from '../contexts/TimerContext'
@@ -143,21 +143,26 @@ export default function TimerOverlay() {
 
         <View style={styles.circleWrapper}>
           <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={StyleSheet.absoluteFill}>
+            {/* Track ring */}
             <Circle
               cx={CX} cy={CY} r={RADIUS}
               stroke="rgba(255,255,255,0.1)"
               strokeWidth={14}
               fill="none"
             />
-            <Circle
-              cx={CX} cy={CY} r={RADIUS}
+            {/* Progress ring — path explicitly starts at 12 o'clock (top center) */}
+            <Path
+              d={[
+                `M ${CX} ${CY - RADIUS}`,
+                `A ${RADIUS} ${RADIUS} 0 0 1 ${CX} ${CY + RADIUS}`,
+                `A ${RADIUS} ${RADIUS} 0 0 1 ${CX} ${CY - RADIUS}`,
+              ].join(' ')}
               stroke="#f59e0b"
               strokeWidth={14}
               fill="none"
               strokeDasharray={CIRCUMFERENCE}
               strokeDashoffset={strokeDashoffset}
-              strokeLinecap="square"
-              transform={`rotate(-90, ${CX}, ${CY})`}
+              strokeLinecap="butt"
             />
           </Svg>
           <View style={styles.timerTextWrapper}>
@@ -178,7 +183,10 @@ export default function TimerOverlay() {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={reset}>
+        <TouchableOpacity
+          onPress={reset}
+          hitSlop={{ top: 14, bottom: 14, left: 24, right: 24 }}
+        >
           <Text style={styles.resetLink}>Reset</Text>
         </TouchableOpacity>
       </View>

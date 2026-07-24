@@ -187,8 +187,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => {
     alarmActiveRef.current = false
     setIsRunning(false)
-    setTimeLeft(totalTime)
-  }, [totalTime])
+    setTimeLeft(totalTimeRef.current)
+  }, [])
 
   const selectPreset = useCallback((preset: TimerPreset) => {
     alarmActiveRef.current = false
