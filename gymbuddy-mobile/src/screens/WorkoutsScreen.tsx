@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import {
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -32,6 +33,8 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [collapseEmpty, setCollapseEmpty] = useState(true)
 
   const fetchWorkouts = useCallback(async () => {
     if (!token) return
@@ -166,6 +169,56 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         workouts={workouts}
       />
 
+      <Modal
+        visible={showMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          onPress={() => setShowMenu(false)}
+          activeOpacity={1}
+        >
+          <TouchableOpacity
+            style={styles.menuCard}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <Text style={styles.menuTitle}>Options</Text>
+
+            <TouchableOpacity
+              style={styles.menuCheckboxRow}
+              onPress={() => setCollapseEmpty((v) => !v)}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={collapseEmpty ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={collapseEmpty ? '#d97706' : '#a8a29e'}
+              />
+              <Text style={styles.menuCheckboxLabel}>
+                Hide days that have no data for this exercise
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity
+              style={styles.menuAddBtn}
+              onPress={() => {
+                setShowMenu(false)
+                setShowCreateForm(true)
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.menuAddBtnText}>Add New Session</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {workouts.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.empty}>No workouts yet</Text>
@@ -193,11 +246,11 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             <View style={styles.tableHeader}>
               <View style={styles.thAddButton}>
                 <TouchableOpacity
-                  style={[styles.addButton]}
-                  onPress={() => setShowCreateForm(true)}
+                  style={styles.menuButton}
+                  onPress={() => setShowMenu(true)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="add" size={34} color="#1c1917" />
+                  <Ionicons name="menu-outline" size={28} color="#fff4e6" />
                 </TouchableOpacity>
               </View>
               <View style={styles.thExercise}>
@@ -241,6 +294,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
               .filter(
                 (item) =>
                   !selectedExercise ||
+                  !collapseEmpty ||
                   getExerciseForWorkout(item, selectedExercise.id) != null,
               )
               .map((item) => {
@@ -335,6 +389,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f59e0b',
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  menuCard: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  menuTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1c1917',
+    marginBottom: 20,
+  },
+  menuCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  menuCheckboxLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#44403c',
+    lineHeight: 20,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#e7e5e4',
+    marginVertical: 20,
+  },
+  menuAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#f59e0b',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  menuAddBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
   table: {
     backgroundColor: '#fff',
