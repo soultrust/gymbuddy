@@ -17,8 +17,8 @@ import { useTimer } from '../contexts/TimerContext'
 import type { TimerPreset } from '../types/timer'
 
 // ─── Circle geometry ─────────────────────────────────────────────────────────
-const CIRCLE_SIZE = 240
-const RADIUS = 98
+const CIRCLE_SIZE = 260
+const RADIUS = 108
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 const CX = CIRCLE_SIZE / 2
 const CY = CIRCLE_SIZE / 2
@@ -29,7 +29,7 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-// ─── Preset row ───────────────────────────────────────────────────────────────
+// ─── Preset pill ─────────────────────────────────────────────────────────────
 function PresetRow({
   preset,
   isActive,
@@ -56,17 +56,11 @@ function PresetRow({
       <TouchableOpacity
         onPress={onDelete}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        style={styles.presetDeleteBtn}
       >
         <Ionicons name="trash-outline" size={18} color="#a8a29e" />
       </TouchableOpacity>
     </TouchableOpacity>
   )
-}
-
-// ─── Section header ───────────────────────────────────────────────────────────
-function SectionLabel({ label }: { label: string }) {
-  return <Text style={styles.sectionLabel}>{label}</Text>
 }
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
@@ -92,6 +86,7 @@ export default function TimerOverlay() {
     setAlarmShutoffSeconds,
   } = useTimer()
 
+  const [showSettings, setShowSettings] = useState(false)
   const [showAddPreset, setShowAddPreset] = useState(false)
   const [newName, setNewName] = useState('')
   const [newMinutes, setNewMinutes] = useState('1')
@@ -129,162 +124,189 @@ export default function TimerOverlay() {
     } catch {}
   }
 
-  const handleShutoffSecondsBlur = () => {
+  const handleShutoffBlur = () => {
     const n = parseInt(shutoffInput, 10)
-    if (!isNaN(n) && n > 0) {
-      setAlarmShutoffSeconds(n)
-    } else {
-      setShutoffInput(String(alarmShutoffSeconds))
-    }
+    if (!isNaN(n) && n > 0) setAlarmShutoffSeconds(n)
+    else setShutoffInput(String(alarmShutoffSeconds))
   }
 
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
-      {/* Dark backdrop */}
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* ── Dark backdrop (blocks touches to content below) ── */}
       <View style={styles.backdrop} />
 
-      <View style={styles.sheet}>
-        {/* ── Title ── */}
-        <Text style={styles.sheetTitle}>Timer Settings</Text>
+      {/* ── Timer face ── */}
+      <View style={styles.timerContainer}>
+        {activePreset && (
+          <Text style={styles.presetLabel}>{activePreset.name}</Text>
+        )}
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <View style={styles.circleWrapper}>
+          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={StyleSheet.absoluteFill}>
+            <Circle
+              cx={CX} cy={CY} r={RADIUS}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={14}
+              fill="none"
+            />
+            <Circle
+              cx={CX} cy={CY} r={RADIUS}
+              stroke="#f59e0b"
+              strokeWidth={14}
+              fill="none"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="square"
+              transform={`rotate(-90, ${CX}, ${CY})`}
+            />
+          </Svg>
+          <View style={styles.timerTextWrapper}>
+            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.playPauseBtn}
+          onPress={isRunning ? pause : play}
+          activeOpacity={0.8}
         >
-          {/* ── Timer face ── */}
-          <View style={styles.timerFace}>
-            {activePreset && (
-              <Text style={styles.presetLabel}>{activePreset.name}</Text>
-            )}
+          <Ionicons
+            name={isRunning ? 'pause' : 'play'}
+            size={34}
+            color="#fff"
+            style={isRunning ? undefined : { marginLeft: 4 }}
+          />
+        </TouchableOpacity>
 
-            <View style={styles.circleWrapper}>
-              <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={StyleSheet.absoluteFill}>
-                <Circle
-                  cx={CX} cy={CY} r={RADIUS}
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth={13}
-                  fill="none"
-                />
-                <Circle
-                  cx={CX} cy={CY} r={RADIUS}
-                  stroke="#f59e0b"
-                  strokeWidth={13}
-                  fill="none"
-                  strokeDasharray={CIRCUMFERENCE}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="square"
-                  transform={`rotate(-90, ${CX}, ${CY})`}
-                />
-              </Svg>
-              <View style={styles.timerTextWrapper}>
-                <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.playPauseBtn}
-              onPress={isRunning ? pause : play}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={isRunning ? 'pause' : 'play'}
-                size={32}
-                color="#fff"
-                style={isRunning ? undefined : { marginLeft: 4 }}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.resetLink} onPress={reset}>
-              <Text style={styles.resetLinkText}>Reset</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* ── Presets section ── */}
-          <SectionLabel label="Presets" />
-
-          {presets.map((p) => (
-            <PresetRow
-              key={p.id}
-              preset={p}
-              isActive={activePreset?.id === p.id}
-              onSelect={() => selectPreset(p)}
-              onDelete={() => deletePreset(p.id)}
-            />
-          ))}
-
-          <TouchableOpacity
-            style={styles.addPresetTrigger}
-            onPress={() => setShowAddPreset(true)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add" size={20} color="#f59e0b" />
-            <Text style={styles.addPresetTriggerText}>Add Preset</Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* ── Alarm settings section ── */}
-          <SectionLabel label="Alarm" />
-
-          {/* Auto-shutoff checkbox */}
-          <TouchableOpacity
-            style={styles.checkboxRow}
-            onPress={() => setAlarmAutoShutoff(!alarmAutoShutoff)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={alarmAutoShutoff ? 'checkbox' : 'square-outline'}
-              size={22}
-              color={alarmAutoShutoff ? '#f59e0b' : 'rgba(255,255,255,0.3)'}
-            />
-            <Text style={styles.checkboxLabel}>Timer alarm auto-shutoff</Text>
-          </TouchableOpacity>
-
-          {alarmAutoShutoff && (
-            <View style={styles.shutoffRow}>
-              <Text style={styles.shutoffText}>Shut off after</Text>
-              <TextInput
-                style={styles.shutoffInput}
-                value={shutoffInput}
-                onChangeText={setShutoffInput}
-                onBlur={handleShutoffSecondsBlur}
-                keyboardType="number-pad"
-                selectTextOnFocus
-              />
-              <Text style={styles.shutoffText}>seconds</Text>
-            </View>
-          )}
-
-          {/* Sound picker */}
-          <View style={styles.soundRow}>
-            <TouchableOpacity style={styles.soundPickerBtn} onPress={pickSound} activeOpacity={0.7}>
-              <Ionicons name="musical-note-outline" size={18} color="rgba(255,255,255,0.55)" />
-              <Text style={styles.soundPickerText}>
-                {customSoundUri ? 'Custom sound' : 'Default beep'}
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.3)" />
-            </TouchableOpacity>
-            {customSoundUri && (
-              <TouchableOpacity
-                onPress={() => setCustomSoundUri(null)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={{ marginLeft: 8 }}
-              >
-                <Ionicons name="close-circle-outline" size={20} color="rgba(255,255,255,0.35)" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Bottom padding so last item clears keyboard/home indicator */}
-          <View style={{ height: 24 }} />
-        </ScrollView>
+        <TouchableOpacity onPress={reset}>
+          <Text style={styles.resetLink}>Reset</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ── Add Preset Modal ── */}
+      {/* ── Hamburger — lower left ── */}
+      <TouchableOpacity
+        style={styles.hamburgerBtn}
+        onPress={() => setShowSettings(true)}
+        activeOpacity={0.8}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      >
+        <Ionicons name="menu" size={28} color="rgba(255,255,255,0.6)" />
+      </TouchableOpacity>
+
+      {/* ══ Settings modal ══════════════════════════════════════════════════ */}
+      <Modal
+        visible={showSettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <View style={styles.settingsOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowSettings(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.settingsSheet}>
+            {/* drag handle */}
+            <View style={styles.handle} />
+
+            <Text style={styles.sheetTitle}>Timer Settings</Text>
+
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* ── Presets ── */}
+              <Text style={styles.sectionLabel}>Presets</Text>
+
+              {presets.map((p) => (
+                <PresetRow
+                  key={p.id}
+                  preset={p}
+                  isActive={activePreset?.id === p.id}
+                  onSelect={() => {
+                    selectPreset(p)
+                    setShowSettings(false)
+                  }}
+                  onDelete={() => deletePreset(p.id)}
+                />
+              ))}
+
+              <TouchableOpacity
+                style={styles.addPresetTrigger}
+                onPress={() => setShowAddPreset(true)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="add" size={20} color="#f59e0b" />
+                <Text style={styles.addPresetTriggerText}>Add Preset</Text>
+              </TouchableOpacity>
+
+              <View style={styles.divider} />
+
+              {/* ── Alarm ── */}
+              <Text style={styles.sectionLabel}>Alarm</Text>
+
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setAlarmAutoShutoff(!alarmAutoShutoff)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={alarmAutoShutoff ? 'checkbox' : 'square-outline'}
+                  size={22}
+                  color={alarmAutoShutoff ? '#f59e0b' : 'rgba(255,255,255,0.3)'}
+                />
+                <Text style={styles.checkboxLabel}>Timer alarm auto-shutoff</Text>
+              </TouchableOpacity>
+
+              {alarmAutoShutoff && (
+                <View style={styles.shutoffRow}>
+                  <Text style={styles.shutoffText}>Shut off after</Text>
+                  <TextInput
+                    style={styles.shutoffInput}
+                    value={shutoffInput}
+                    onChangeText={setShutoffInput}
+                    onBlur={handleShutoffBlur}
+                    keyboardType="number-pad"
+                    selectTextOnFocus
+                  />
+                  <Text style={styles.shutoffText}>seconds</Text>
+                </View>
+              )}
+
+              {/* ── Sound ── */}
+              <View style={styles.soundRow}>
+                <TouchableOpacity
+                  style={styles.soundPickerBtn}
+                  onPress={pickSound}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="musical-note-outline" size={18} color="rgba(255,255,255,0.55)" />
+                  <Text style={styles.soundPickerText}>
+                    {customSoundUri ? 'Custom sound' : 'Default beep'}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.3)" />
+                </TouchableOpacity>
+                {customSoundUri && (
+                  <TouchableOpacity
+                    onPress={() => setCustomSoundUri(null)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <Ionicons name="close-circle-outline" size={20} color="rgba(255,255,255,0.35)" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={{ height: 32 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ══ Add Preset modal ════════════════════════════════════════════════ */}
       <Modal
         visible={showAddPreset}
         transparent
@@ -292,7 +314,7 @@ export default function TimerOverlay() {
         onRequestClose={() => setShowAddPreset(false)}
       >
         <KeyboardAvoidingView
-          style={styles.addPresetModalOuter}
+          style={styles.addPresetOuter}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <TouchableOpacity
@@ -365,46 +387,23 @@ export default function TimerOverlay() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-    justifyContent: 'flex-end',
-  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 6, 2, 0.88)',
+    backgroundColor: 'rgba(10, 6, 2, 0.92)',
   },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    backgroundColor: '#1c1410',
-    paddingTop: 24,
-    height: '88%',
-  },
-  sheetTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.35)',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    textAlign: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 24,
-  },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 24 },
 
   // ── Timer face
-  timerFace: {
+  timerContainer: {
+    flex: 1,
     alignItems: 'center',
-    gap: 20,
-    paddingBottom: 8,
+    justifyContent: 'center',
+    gap: 24,
   },
   presetLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
-    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.45)',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   circleWrapper: {
@@ -418,38 +417,72 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timerText: {
-    fontSize: 52,
+    fontSize: 58,
     fontWeight: '200',
     color: '#fff',
     letterSpacing: 4,
     fontVariant: ['tabular-nums'],
   },
   playPauseBtn: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#d97706',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.6,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 10,
   },
-  resetLink: { paddingVertical: 4 },
-  resetLinkText: {
+  resetLink: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.35)',
     textDecorationLine: 'underline',
   },
 
-  // ── Section divider + label
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginVertical: 20,
+  // ── Hamburger
+  hamburgerBtn: {
+    position: 'absolute',
+    bottom: 48,
+    left: 28,
   },
+
+  // ── Settings modal
+  settingsOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  settingsSheet: {
+    backgroundColor: '#1c1410',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 12,
+    height: '80%',
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.35)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 24 },
+
+  // ── Section
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -457,6 +490,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.4,
     marginBottom: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginVertical: 20,
   },
 
   // ── Presets
@@ -486,7 +524,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     fontVariant: ['tabular-nums'],
   },
-  presetDeleteBtn: { padding: 4 },
   addPresetTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,7 +536,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── Alarm settings
+  // ── Alarm
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -535,7 +572,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  // ── Sound picker
+  // ── Sound
   soundRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -553,8 +590,8 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.45)',
   },
 
-  // ── Add Preset Modal
-  addPresetModalOuter: {
+  // ── Add Preset modal
+  addPresetOuter: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
