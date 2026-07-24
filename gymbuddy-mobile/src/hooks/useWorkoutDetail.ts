@@ -23,6 +23,7 @@ export function useWorkoutDetail(
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [newExerciseName, setNewExerciseName] = useState('')
+  const [newExerciseNote, setNewExerciseNote] = useState('')
   const [newExerciseBodyweight, setNewExerciseBodyweight] = useState(false)
   const [newExerciseMeasureUnit, setNewExerciseMeasureUnit] = useState<'sets_reps' | 'stopwatch'>('sets_reps')
   const [addingExercise, setAddingExercise] = useState(false)
@@ -364,6 +365,7 @@ export function useWorkoutDetail(
     setAddingExercise(true)
     const wasBodyweight = newExerciseBodyweight
     const wasMeasureUnit = newExerciseMeasureUnit
+    const noteToSave = newExerciseNote.trim()
     try {
       const exercises = workout.exercises ?? []
       const nextOrder =
@@ -383,8 +385,16 @@ export function useWorkoutDetail(
         },
       )
       setNewExerciseName('')
+      setNewExerciseNote('')
       setNewExerciseBodyweight(false)
       setNewExerciseMeasureUnit('sets_reps')
+      if (noteToSave && created) {
+        await apiRequest(`/performed-exercises/${created.id}/note_for_next_time/`, {
+          method: 'POST',
+          body: { note: noteToSave },
+          token,
+        }).catch(() => {})
+      }
       if (created) {
         created.is_bodyweight = wasBodyweight
         created.measure_unit = wasMeasureUnit
@@ -560,6 +570,8 @@ export function useWorkoutDetail(
     userExercises,
     newExerciseName,
     setNewExerciseName,
+    newExerciseNote,
+    setNewExerciseNote,
     newExerciseBodyweight,
     setNewExerciseBodyweight,
     newExerciseMeasureUnit,

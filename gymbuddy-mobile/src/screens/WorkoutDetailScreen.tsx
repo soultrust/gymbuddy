@@ -38,6 +38,8 @@ export default function WorkoutDetailScreen({
     userExercises,
     newExerciseName,
     setNewExerciseName,
+    newExerciseNote,
+    setNewExerciseNote,
     newExerciseMeasureUnit,
     setNewExerciseMeasureUnit,
     addingExercise,
@@ -716,6 +718,16 @@ export default function WorkoutDetailScreen({
                   ))}
                 </View>
               )}
+
+              <Text style={styles.addExerciseFieldLabel}>Note</Text>
+              <TextInput
+                style={[styles.addExerciseInput, styles.addExerciseInputFull]}
+                value={newExerciseNote}
+                onChangeText={setNewExerciseNote}
+                placeholder="e.g. Focus on form, keep elbows tucked"
+                placeholderTextColor="#a8a29e"
+                clearButtonMode="while-editing"
+              />
 
               <TouchableOpacity
                 onPress={handleAddExercise}
