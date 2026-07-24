@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {
   Animated,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,7 +9,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
@@ -73,10 +71,6 @@ export default function WorkoutDetailScreen({
     setEditingSetMinutes,
     editingSetSeconds,
     setEditingSetSeconds,
-    editingDate,
-    setEditingDate,
-    editingDateValue,
-    setEditingDateValue,
     expandedNotesFor,
     setExpandedNotesFor,
     editingNoteFor,
@@ -89,7 +83,6 @@ export default function WorkoutDetailScreen({
     handleAddSet,
     saveSetToApi,
     handleSaveSet,
-    handleSaveDate,
     confirmDeleteSet,
     confirmDeleteExercise,
     handleDeleteWorkout,
@@ -171,58 +164,15 @@ export default function WorkoutDetailScreen({
             )}
           </View>
 
-          {!editingDate && (
-            <TouchableOpacity
-              onPress={handleDeleteWorkout}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.deleteBtn}
-            >
-              <Ionicons name="close-outline" size={26} color="#78716c" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={handleDeleteWorkout}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.deleteBtn}
+          >
+            <Ionicons name="close-outline" size={26} color="#78716c" />
+          </TouchableOpacity>
         </View>
 
-        {/* Date — tap to edit */}
-        {editingDate ? (
-          <View style={styles.dateEditContainer}>
-            <DateTimePicker
-              value={editingDateValue || new Date(workout.date)}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(_event: unknown, selectedDate?: Date) => {
-                if (Platform.OS === 'android') setEditingDate(false)
-                if (selectedDate) {
-                  setEditingDateValue(selectedDate)
-                  if (Platform.OS === 'android') handleSaveDate(selectedDate)
-                }
-              }}
-            />
-            {Platform.OS === 'ios' && (
-              <View style={styles.dateEditActions}>
-                <TouchableOpacity
-                  style={styles.dateEditBtn}
-                  onPress={() => { setEditingDate(false); setEditingDateValue(null) }}
-                >
-                  <Text style={styles.dateEditBtnText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.dateEditBtn}
-                  onPress={() => handleSaveDate()}
-                >
-                  <Text style={styles.dateEditBtnText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={() => { setEditingDate(true); setEditingDateValue(new Date(workout.date)) }}
-            activeOpacity={0.7}
-            style={styles.dateSubtitleBtn}
-          >
-            <Text style={styles.dateSubtitle}>{formatFullDate(workout.date)}</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
@@ -801,18 +751,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingVertical: 0,
   },
-  dateSubtitleBtn: { marginTop: 4 },
-  dateSubtitle: { fontSize: 12, color: '#78716c' },
   deleteBtn: { padding: 4 },
-  dateEditContainer: { alignItems: 'center' },
-  dateEditActions: { flexDirection: 'row', gap: 16, marginTop: 16 },
-  dateEditBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#e7e5e4',
-  },
-  dateEditBtnText: { fontSize: 16, fontWeight: '500', color: '#1c1917' },
   content: { flex: 1 },
   contentInner: { padding: 24, paddingBottom: 32, backgroundColor: '#c9a882' },
   empty: {

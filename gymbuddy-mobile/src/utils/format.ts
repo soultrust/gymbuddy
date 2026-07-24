@@ -27,13 +27,23 @@ export const formatMonthDayPadded = (d: string): string => {
   return `${mm}/${dd}`
 }
 
-/** Format as "FRI Feb 13, 2006" */
+/** Format as "FRI July 24, 2026" */
 export const formatFullDate = (d: string): string => {
   const date = new Date(d)
   const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ]
+  return `${weekdays[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+}
+
+/** Same format for a Date object (used for today's date suggestions) */
+export const formatFullDateFromDate = (date: Date): string => {
+  const weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
   ]
   return `${weekdays[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
 }

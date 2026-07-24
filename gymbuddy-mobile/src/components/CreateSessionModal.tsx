@@ -12,6 +12,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker'
 
 import { apiRequest } from '../api/client'
+import { formatFullDateFromDate } from '../utils/format'
 import { useAccent } from '../contexts/AccentContext'
 import type { Workout, TemplateSource } from '../types/workout'
 import { formatSessionDate } from '../utils/format'
@@ -34,7 +35,7 @@ export default function CreateSessionModal({
   const { accent } = useAccent()
   const [createDate, setCreateDate] = useState(() => new Date())
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [createTitle, setCreateTitle] = useState('')
+  const [createTitle, setCreateTitle] = useState(() => formatFullDateFromDate(new Date()))
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
