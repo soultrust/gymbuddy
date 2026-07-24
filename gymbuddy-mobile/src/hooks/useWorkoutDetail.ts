@@ -438,14 +438,15 @@ export function useWorkoutDetail(
 
       let userPreferredName = ''
       let lastSets: TemplateSetEntry[] = []
+      let lastPerformance: TemplateExercise | null = null
       try {
-        const last = await apiRequest<TemplateExercise>(
+        lastPerformance = await apiRequest<TemplateExercise>(
           `/workouts/last_exercise_performance/?exercise_id=${exerciseId}`,
           { token },
         )
-        if (last?.user_preferred_name) userPreferredName = last.user_preferred_name
-        if (Array.isArray(last?.last_sets) && last.last_sets.length > 0)
-          lastSets = last.last_sets
+        if (lastPerformance?.user_preferred_name) userPreferredName = lastPerformance.user_preferred_name
+        if (Array.isArray(lastPerformance?.last_sets) && lastPerformance.last_sets.length > 0)
+          lastSets = lastPerformance.last_sets
       } catch {
         // No previous performance; add exercise with no sets
       }
@@ -459,7 +460,7 @@ export function useWorkoutDetail(
             exercise: exerciseId,
             order: nextOrder,
             user_preferred_name: userPreferredName,
-            measure_unit: last?.measure_unit ?? 'sets_reps',
+            measure_unit: lastPerformance?.measure_unit ?? 'sets_reps',
           },
         },
       )

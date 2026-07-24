@@ -1,12 +1,16 @@
 import { StatusBar } from 'expo-status-bar'
+import { View, StyleSheet } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext'
+import { TimerProvider } from './src/contexts/TimerContext'
 import LoginScreen from './src/screens/LoginScreen'
 import WorkoutsScreen from './src/screens/WorkoutsScreen'
 import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen'
 import LoadingSpinner from './src/components/LoadingSpinner'
+import TimerFAB from './src/components/TimerFAB'
+import TimerOverlay from './src/components/TimerOverlay'
 
 const Stack = createNativeStackNavigator()
 
@@ -33,6 +37,12 @@ function AppNavigator() {
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
       </Stack.Navigator>
+      {isLoggedIn && (
+        <>
+          <TimerOverlay />
+          <TimerFAB />
+        </>
+      )}
     </NavigationContainer>
   )
 }
@@ -40,9 +50,17 @@ function AppNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppNavigator />
-      <StatusBar style="dark" />
+      <TimerProvider>
+        <View style={styles.root}>
+          <AppNavigator />
+          <StatusBar style="dark" />
+        </View>
+      </TimerProvider>
     </AuthProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+})
 
