@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#f59e0b"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.soultrust.GymBuddy",
@@ -36,6 +36,9 @@
       "eas": {
         "projectId": "8b6959ef-1df0-4ebf-bf5f-ff15b120a8a5"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

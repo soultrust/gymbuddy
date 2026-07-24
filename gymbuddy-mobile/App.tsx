@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar'
 import { View, StyleSheet } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { useFonts, Oswald_500Medium } from '@expo-google-fonts/oswald'
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext'
 import { TimerProvider } from './src/contexts/TimerContext'
@@ -48,6 +49,9 @@ function AppNavigator() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({ Oswald_500Medium })
+  if (!fontsLoaded) return null
+
   return (
     <AuthProvider>
       <TimerProvider>

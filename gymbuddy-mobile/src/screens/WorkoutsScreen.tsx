@@ -34,6 +34,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false)
   const [collapseEmpty, setCollapseEmpty] = useState(true)
 
   const fetchWorkouts = useCallback(async () => {
@@ -145,17 +146,61 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>GymBuddy</Text>
-          {userEmail ? (
-            <Text style={styles.userEmail} numberOfLines={1}>
-              {userEmail}
-            </Text>
-          ) : null}
+          <Text style={styles.title}>
+            <Text style={styles.titleGym}>GYM</Text>
+            <Text style={styles.titleBuddy}>BUDDY</Text>
+          </Text>
         </View>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={styles.logout}>Log out</Text>
+        <TouchableOpacity
+          onPress={() => setShowHeaderMenu(true)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="menu" size={26} color="#1c1917" />
         </TouchableOpacity>
       </View>
+
+      {/* Header hamburger dropdown */}
+      <Modal
+        visible={showHeaderMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowHeaderMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.headerMenuBackdrop}
+          onPress={() => setShowHeaderMenu(false)}
+          activeOpacity={1}
+        >
+          <TouchableOpacity
+            style={styles.headerMenuCard}
+            activeOpacity={1}
+            onPress={() => {}}
+          >
+            <TouchableOpacity
+              style={styles.headerMenuItem}
+              onPress={() => setShowHeaderMenu(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="person-outline" size={18} color="#1c1917" />
+              <Text style={styles.headerMenuItemText}>User Profile</Text>
+            </TouchableOpacity>
+
+            <View style={styles.headerMenuDivider} />
+
+            <TouchableOpacity
+              style={styles.headerMenuItem}
+              onPress={() => {
+                setShowHeaderMenu(false)
+                handleLogout()
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={18} color="#dc2626" />
+              <Text style={[styles.headerMenuItemText, { color: '#dc2626' }]}>Logout</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       <CreateSessionModal
         visible={showCreateForm}
@@ -348,19 +393,51 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontFamily: 'Oswald_500Medium',
+    letterSpacing: 0.5,
+  },
+  titleGym: {
+    color: 'rgba(146, 64, 14, 0.5)',
+  },
+  titleBuddy: {
+    color: '#92400e',
+  },
+  // Header hamburger dropdown
+  headerMenuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  headerMenuCard: {
+    position: 'absolute',
+    top: 108,
+    right: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 8,
+    minWidth: 180,
+    overflow: 'hidden',
+  },
+  headerMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  headerMenuItemText: {
+    fontSize: 15,
     color: '#1c1917',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#78716c',
-    marginTop: 2,
-  },
-  logout: {
-    color: '#d97706',
-    fontSize: 16,
     fontWeight: '500',
+  },
+  headerMenuDivider: {
+    height: 1,
+    backgroundColor: '#f5f5f4',
+    marginHorizontal: 16,
   },
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1, padding: 24, paddingBottom: 32 },
