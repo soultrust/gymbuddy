@@ -28,7 +28,7 @@ type NavProps = {
 }
 
 export default function WorkoutsScreen({ navigation }: NavProps) {
-  const { token, userEmail, logout } = useAuth()
+  const { token, logout } = useAuth()
   const { accent } = useAccent()
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +37,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  const [showHeaderMenu, setShowHeaderMenu] = useState(false)
   const [collapseEmpty, setCollapseEmpty] = useState(true)
 
   const fetchWorkouts = useCallback(async () => {
@@ -80,10 +79,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     setRefreshing(true)
     await fetchWorkouts()
     setRefreshing(false)
-  }
-
-  const handleLogout = async () => {
-    await logout()
   }
 
   const exerciseColumns = useMemo(() => {
@@ -147,54 +142,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>
-            <Text style={styles.titleGym}>GYM</Text>
-            <Text style={styles.titleBuddy}>BUDDY</Text>
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => setShowHeaderMenu(true)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="menu" size={26} color="#1c1917" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Header hamburger dropdown */}
-      <Modal
-        visible={showHeaderMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowHeaderMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.headerMenuBackdrop}
-          onPress={() => setShowHeaderMenu(false)}
-          activeOpacity={1}
-        >
-          <TouchableOpacity
-            style={styles.headerMenuCard}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <View style={styles.headerMenuDivider} />
-
-            <TouchableOpacity
-              style={styles.headerMenuItem}
-              onPress={() => {
-                setShowHeaderMenu(false)
-                handleLogout()
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="log-out-outline" size={18} color="#dc2626" />
-              <Text style={[styles.headerMenuItemText, { color: '#dc2626' }]}>Logout</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
 
       <CreateSessionModal
         visible={showCreateForm}
@@ -371,79 +318,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#c9a882',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: space.md,
-    paddingTop: 60,
-    backgroundColor: colorTokens.bg.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colorTokens.border.light,
-    zIndex: 200,
-    elevation: 200,
-  },
-  headerLeft: {
-    flex: 1,
-    minWidth: 0,
-  },
-  title: {
-    fontSize: typography.size.hero,
-    fontFamily: 'Oswald_500Medium',
-    letterSpacing: 0.5,
-  },
-  titleGym: {
-    color: 'rgba(146, 64, 14, 0.5)',
-  },
-  titleBuddy: {
-    color: '#92400e',
-  },
-  // Header hamburger dropdown
-  headerMenuBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-  },
-  headerMenuCard: {
-    position: 'absolute',
-    top: 108,
-    right: space.md,
-    backgroundColor: colorTokens.bg.surface,
-    borderRadius: radius.md,
-    ...shadow.md,
-    minWidth: 180,
-    overflow: 'hidden',
-  },
-  headerMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: 14,
-    paddingHorizontal: space.md,
-  },
-  headerMenuItemText: {
-    fontSize: typography.size.lg,
-    color: colorTokens.text.primary,
-    fontWeight: typography.weight.medium,
-  },
-  headerMenuDivider: {
-    height: 1,
-    backgroundColor: colorTokens.bg.screen,
-    marginHorizontal: space.md,
-  },
-  accentSwatchRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  accentSwatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   accentSwatchActive: {
     borderWidth: 2.5,
