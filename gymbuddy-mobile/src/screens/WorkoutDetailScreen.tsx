@@ -563,7 +563,7 @@ export default function WorkoutDetailScreen({
                               }
                             }}
                           >
-                            <Text style={[styles.addSetLink, { color: accentDark }]}>+ Add set</Text>
+                            <Text style={[styles.addSetLink, { color: accentDark }]}>+ Add Set</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => {
@@ -578,7 +578,7 @@ export default function WorkoutDetailScreen({
                             }}
                             style={styles.notesLinkRow}
                           >
-                            <Text style={[styles.notesLink, { color: accentDark }]}>Add Note</Text>
+                            <Text style={[styles.notesLink, { color: accentDark }]}>+ Add Note</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -591,9 +591,9 @@ export default function WorkoutDetailScreen({
 
             <View style={styles.addSectionsZone}>
             {userExercises.length > 0 && (
-              <View style={[styles.addPastExerciseSection, styles.card]}>
+              <View style={styles.addPastExerciseSection}>
                 <Text style={styles.addPastExerciseLabel}>
-                  Add past exercise{' '}
+                  Add Past Exercise{' '}
                   <Text style={styles.addPastExerciseHint}>
                     (uses data from last time)
                   </Text>
@@ -617,7 +617,7 @@ export default function WorkoutDetailScreen({
               </View>
             )}
 
-            <View style={[styles.addExerciseSection, styles.card]}>
+            <View style={styles.addExerciseSection}>
               <Text style={styles.addPastExerciseLabel}>Add New Exercise</Text>
 
               <Text style={styles.addExerciseFieldLabel}>Title of Exercise</Text>
@@ -880,7 +880,12 @@ const styles = StyleSheet.create({
   addSetBtnText: { fontWeight: '600', fontSize: 16 },
   cancelBtn: { paddingHorizontal: 8 },
   cancelBtnText: { color: '#78716c', fontSize: 16 },
-  addSetLink: { marginTop: 0, fontSize: 18, fontWeight: '600' },
+  addSetLink: {
+    marginTop: 0,
+    fontSize: 18,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
+  },
   addSetNotesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -888,7 +893,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   notesLinkRow: { flexDirection: 'row', alignItems: 'center' },
-  notesLink: { fontSize: 18, fontWeight: '600' },
+  notesLink: {
+    fontSize: 18,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
+  },
   cardBodyWrapper: {
     backgroundColor: '#fff4e6',
     padding: 16,
@@ -945,9 +954,9 @@ const styles = StyleSheet.create({
   },
   noteReminderText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: '#92400e',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   notesInput: {
     flex: 1,
@@ -959,18 +968,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: '#fff',
   },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e7e5e4',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
   addSectionsZone: {
     marginHorizontal: -24,
     paddingHorizontal: 24,
@@ -980,13 +977,12 @@ const styles = StyleSheet.create({
   },
   addPastExerciseSection: { marginTop: 0 },
   addPastExerciseLabel: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
     color: '#78716c',
     marginBottom: 8,
-    textTransform: 'uppercase',
   },
-  addPastExerciseHint: { fontWeight: '400', color: '#a8a29e', textTransform: 'none' },
+  addPastExerciseHint: { fontWeight: '400', color: '#a8a29e' },
   addPastExerciseList: { maxHeight: 200 },
   addPastExerciseItem: {
     paddingVertical: 8,
