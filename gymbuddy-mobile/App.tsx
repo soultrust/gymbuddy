@@ -6,6 +6,7 @@ import { useFonts, Oswald_500Medium } from '@expo-google-fonts/oswald'
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext'
 import { TimerProvider } from './src/contexts/TimerContext'
+import { AccentProvider } from './src/contexts/AccentContext'
 import LoginScreen from './src/screens/LoginScreen'
 import WorkoutsScreen from './src/screens/WorkoutsScreen'
 import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen'
@@ -53,14 +54,16 @@ export default function App() {
   if (!fontsLoaded) return null
 
   return (
-    <AuthProvider>
-      <TimerProvider>
-        <View style={styles.root}>
-          <AppNavigator />
-          <StatusBar style="dark" />
-        </View>
-      </TimerProvider>
-    </AuthProvider>
+    <AccentProvider>
+      <AuthProvider>
+        <TimerProvider>
+          <View style={styles.root}>
+            <AppNavigator />
+            <StatusBar style="dark" />
+          </View>
+        </TimerProvider>
+      </AuthProvider>
+    </AccentProvider>
   )
 }
 

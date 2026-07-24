@@ -28,6 +28,11 @@ export const colors = {
   stone200: '#e7e5e4',
   stone100: '#f5f5f4',
 
+  // Semantic surface tokens
+  // Change these to retheme the whole app's panel backgrounds
+  surface: '#f0efee',        // main panel / card background
+  surfaceInput: '#e8e6e3',   // input fields, rows within panels
+
   // Functional
   white: '#fff',
   black: '#000',

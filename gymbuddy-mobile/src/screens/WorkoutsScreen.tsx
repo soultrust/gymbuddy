@@ -12,6 +12,8 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { useAuth } from '../contexts/AuthContext'
+import { useAccent } from '../contexts/AccentContext'
+import { colorTokens, space, radius, typography, shadow } from '../theme/tokens'
 import { apiRequest } from '../api/client'
 import type { Workout, PerformedExercise } from '../types/workout'
 import { formatNumber, formatWeight, formatMonthDay } from '../utils/format'
@@ -27,6 +29,7 @@ type NavProps = {
 
 export default function WorkoutsScreen({ navigation }: NavProps) {
   const { token, userEmail, logout } = useAuth()
+  const { accent } = useAccent()
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -176,15 +179,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             activeOpacity={1}
             onPress={() => {}}
           >
-            <TouchableOpacity
-              style={styles.headerMenuItem}
-              onPress={() => setShowHeaderMenu(false)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="person-outline" size={18} color="#1c1917" />
-              <Text style={styles.headerMenuItemText}>User Profile</Text>
-            </TouchableOpacity>
-
             <View style={styles.headerMenuDivider} />
 
             <TouchableOpacity
@@ -240,7 +234,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
               <Ionicons
                 name={collapseEmpty ? 'checkbox' : 'square-outline'}
                 size={22}
-                color={collapseEmpty ? '#d97706' : '#a8a29e'}
+                color={collapseEmpty ? accent : '#a8a29e'}
               />
               <Text style={styles.menuCheckboxLabel}>
                 Hide days that have no data
@@ -250,7 +244,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             <View style={styles.menuDivider} />
 
             <TouchableOpacity
-              style={styles.menuAddBtn}
+              style={[styles.menuAddBtn, { backgroundColor: accent }]}
               onPress={() => {
                 setShowMenu(false)
                 setShowCreateForm(true)
@@ -276,7 +270,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             onPress={() => setShowCreateForm(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={24} color="#d97706" />
+            <Ionicons name="add" size={24} color={accent} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -382,20 +376,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: space.md,
     paddingTop: 60,
-    backgroundColor: '#fff',
+    backgroundColor: colorTokens.bg.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
+    borderBottomColor: colorTokens.border.light,
     zIndex: 200,
-    elevation: 200, // Android
+    elevation: 200,
   },
   headerLeft: {
     flex: 1,
     minWidth: 0,
   },
   title: {
-    fontSize: 26,
+    fontSize: typography.size.hero,
     fontFamily: 'Oswald_500Medium',
     letterSpacing: 0.5,
   },
@@ -413,33 +407,52 @@ const styles = StyleSheet.create({
   headerMenuCard: {
     position: 'absolute',
     top: 108,
-    right: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 8,
+    right: space.md,
+    backgroundColor: colorTokens.bg.surface,
+    borderRadius: radius.md,
+    ...shadow.md,
     minWidth: 180,
     overflow: 'hidden',
   },
   headerMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: space.sm,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: space.md,
   },
   headerMenuItemText: {
-    fontSize: 15,
-    color: '#1c1917',
-    fontWeight: '500',
+    fontSize: typography.size.lg,
+    color: colorTokens.text.primary,
+    fontWeight: typography.weight.medium,
   },
   headerMenuDivider: {
     height: 1,
-    backgroundColor: '#f5f5f4',
-    marginHorizontal: 16,
+    backgroundColor: colorTokens.bg.screen,
+    marginHorizontal: space.md,
+  },
+  accentSwatchRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  accentSwatch: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accentSwatchActive: {
+    borderWidth: 2.5,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1, padding: 24, paddingBottom: 32 },
@@ -467,7 +480,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f59e0b',
   },
   menuButton: {
     width: 44,
@@ -522,7 +534,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#f59e0b',
     borderRadius: 12,
     paddingVertical: 14,
   },

@@ -15,6 +15,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as DocumentPicker from 'expo-document-picker'
 import { useTimer } from '../contexts/TimerContext'
+import { useAccent } from '../contexts/AccentContext'
 import type { TimerPreset } from '../types/timer'
 
 // ─── Circle geometry ─────────────────────────────────────────────────────────
@@ -34,22 +35,27 @@ function formatTime(seconds: number) {
 function PresetRow({
   preset,
   isActive,
+  accent,
   onSelect,
   onDelete,
 }: {
   preset: TimerPreset
   isActive: boolean
+  accent: string
   onSelect: () => void
   onDelete: () => void
 }) {
   return (
     <TouchableOpacity
-      style={[styles.presetItem, isActive && styles.presetItemActive]}
+      style={[
+        styles.presetItem,
+        isActive && { backgroundColor: accent + '2e', borderWidth: 1, borderColor: accent },
+      ]}
       onPress={onSelect}
       activeOpacity={0.75}
     >
       <View style={{ flex: 1 }}>
-        <Text style={[styles.presetName, isActive && styles.presetNameActive]}>
+        <Text style={[styles.presetName, isActive && { color: accent }]}>
           {preset.name}
         </Text>
         <Text style={styles.presetDuration}>{formatTime(preset.duration)}</Text>
@@ -66,6 +72,7 @@ function PresetRow({
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 export default function TimerOverlay() {
+  const { accent, accentDark } = useAccent()
   const {
     isOverlayOpen,
     isRunning,
@@ -160,7 +167,7 @@ export default function TimerOverlay() {
                 `A ${RADIUS} ${RADIUS} 0 0 1 ${CX} ${CY + RADIUS}`,
                 `A ${RADIUS} ${RADIUS} 0 0 1 ${CX} ${CY - RADIUS}`,
               ].join(' ')}
-              stroke="#f59e0b"
+              stroke={accent}
               strokeWidth={14}
               fill="none"
               strokeDasharray={CIRCUMFERENCE}
@@ -174,7 +181,7 @@ export default function TimerOverlay() {
         </View>
 
         <TouchableOpacity
-          style={styles.playPauseBtn}
+          style={[styles.playPauseBtn, { backgroundColor: accent, shadowColor: accentDark }]}
           onPress={isRunning ? pause : play}
           activeOpacity={0.8}
         >
@@ -237,6 +244,7 @@ export default function TimerOverlay() {
                   key={p.id}
                   preset={p}
                   isActive={activePreset?.id === p.id}
+                  accent={accent}
                   onSelect={() => {
                     selectPreset(p)
                     setShowSettings(false)
@@ -250,8 +258,8 @@ export default function TimerOverlay() {
                 onPress={() => setShowAddPreset(true)}
                 activeOpacity={0.85}
               >
-                <Ionicons name="add" size={20} color="#f59e0b" />
-                <Text style={styles.addPresetTriggerText}>Add Preset</Text>
+                <Ionicons name="add" size={20} color={accent} />
+                <Text style={[styles.addPresetTriggerText, { color: accent }]}>Add Preset</Text>
               </TouchableOpacity>
 
               <View style={styles.divider} />
@@ -267,7 +275,7 @@ export default function TimerOverlay() {
                 <Ionicons
                   name={alarmAutoShutoff ? 'checkbox' : 'square-outline'}
                   size={22}
-                  color={alarmAutoShutoff ? '#f59e0b' : 'rgba(255,255,255,0.3)'}
+                  color={alarmAutoShutoff ? accent : 'rgba(255,255,255,0.3)'}
                 />
                 <Text style={styles.checkboxLabel}>Timer alarm auto-shutoff</Text>
               </TouchableOpacity>
@@ -381,6 +389,7 @@ export default function TimerOverlay() {
               <TouchableOpacity
                 style={[
                   styles.addPresetSaveBtn,
+                  { backgroundColor: accent },
                   !newName.trim() && styles.addPresetSaveBtnDisabled,
                 ]}
                 onPress={handleSavePreset}
@@ -438,10 +447,8 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#d97706',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.6,
     shadowRadius: 12,
@@ -518,18 +525,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 8,
   },
-  presetItemActive: {
-    backgroundColor: 'rgba(245,158,11,0.18)',
-    borderWidth: 1,
-    borderColor: '#f59e0b',
-  },
+  presetItemActive: {},
   presetName: {
     fontSize: 15,
     fontWeight: '600',
     color: '#fff',
     marginBottom: 2,
   },
-  presetNameActive: { color: '#f59e0b' },
+  presetNameActive: {},
   presetDuration: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.4)',
@@ -543,7 +546,6 @@ const styles = StyleSheet.create({
   },
   addPresetTriggerText: {
     fontSize: 14,
-    color: '#f59e0b',
     fontWeight: '600',
   },
 
@@ -665,7 +667,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#f59e0b',
     alignItems: 'center',
   },
   addPresetSaveBtnDisabled: { opacity: 0.4 },

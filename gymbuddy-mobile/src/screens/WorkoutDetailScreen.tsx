@@ -19,6 +19,7 @@ import { stepRepsValue } from '../utils/numberInput'
 import ArrowIcon from '../components/ArrowIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { colors } from '../theme/colors'
+import { useAccent } from '../contexts/AccentContext'
 import { useWorkoutDetail } from '../hooks/useWorkoutDetail'
 
 export default function WorkoutDetailScreen({
@@ -30,6 +31,7 @@ export default function WorkoutDetailScreen({
 }) {
   const { workoutId } = route.params
   const { token } = useAuth()
+  const { accent, accentDark } = useAccent()
 
   const {
     workout,
@@ -119,12 +121,12 @@ export default function WorkoutDetailScreen({
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Back</Text>
+            <Text style={[styles.backBtn, { color: accentDark }]}>← Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{fetchError ?? 'Workout not found.'}</Text>
-          <TouchableOpacity style={styles.errorRetryBtn} onPress={retry}>
+          <TouchableOpacity style={[styles.errorRetryBtn, { backgroundColor: accent }]} onPress={retry}>
             <Text style={styles.errorRetryText}>Try again</Text>
           </TouchableOpacity>
         </View>
@@ -136,12 +138,12 @@ export default function WorkoutDetailScreen({
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← Back</Text>
+          <Text style={[styles.backBtn, { color: accentDark }]}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.titleContainer}>
           {editingTitle ? (
             <TextInput
-              style={styles.titleInput}
+              style={[styles.titleInput, { borderBottomColor: accent }]}
               value={editingTitleValue}
               onChangeText={setEditingTitleValue}
               onBlur={handleSaveTitle}
@@ -242,7 +244,7 @@ export default function WorkoutDetailScreen({
                           onSubmitEditing={() => handleSaveExerciseName(pe)}
                           autoFocus
                           returnKeyType="done"
-                          style={styles.exerciseNameInput}
+                          style={[styles.exerciseNameInput, { borderBottomColor: accent }]}
                         />
                       ) : (
                         <TouchableOpacity
@@ -282,7 +284,7 @@ export default function WorkoutDetailScreen({
                               style={[
                                 styles.setRow,
                                 styles.setRowEditing,
-                                { opacity: fadeAnim },
+                                { opacity: fadeAnim, backgroundColor: accent },
                               ]}
                             >
                               <View style={styles.setLabelRow}>
@@ -456,7 +458,7 @@ export default function WorkoutDetailScreen({
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                 style={styles.notesPencilBtn}
                               >
-                                <Ionicons name="create-outline" size={20} color="#d97706" />
+                                <Ionicons name="create-outline" size={20} color={accentDark} />
                               </TouchableOpacity>
                             </View>
                           ) : (
@@ -480,7 +482,7 @@ export default function WorkoutDetailScreen({
                               />
                               {getNotesFor(pe.id).nextTimeNote.length > 0 && (
                                 <TouchableOpacity
-                                  style={styles.notesSubmitBtn}
+                                  style={[styles.notesSubmitBtn, { backgroundColor: accent }]}
                                   onPress={() => handleSaveNote(pe.id, pe.note_for_next_time)}
                                 >
                                   <Ionicons name="chevron-forward" size={18} color="#fff" />
@@ -494,7 +496,7 @@ export default function WorkoutDetailScreen({
                       <View style={styles.addSetNotesColumn}>
                         {addingSetFor === pe.id && (
                           pe.measure_unit === 'stopwatch' ? (
-                            <View style={[styles.addSetRowStopwatch, styles.addSetRowEditing]}>
+                            <View style={[styles.addSetRowStopwatch, styles.addSetRowEditing, { backgroundColor: accent }]}>
                               <View style={styles.addSetTopRow}>
                                 <TouchableOpacity
                                   onPress={() => setAddingSetFor(null)}
@@ -530,7 +532,7 @@ export default function WorkoutDetailScreen({
                               </View>
                             </View>
                           ) : (
-                            <View style={[styles.addSetRow, styles.addSetRowEditing]}>
+                            <View style={[styles.addSetRow, styles.addSetRowEditing, { backgroundColor: accent }]}>
                               <TouchableOpacity
                                 onPress={() => setAddingSetFor(null)}
                                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -611,7 +613,7 @@ export default function WorkoutDetailScreen({
                               }
                             }}
                           >
-                            <Text style={styles.addSetLink}>+ Add set</Text>
+                            <Text style={[styles.addSetLink, { color: accentDark }]}>+ Add set</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() => {
@@ -626,7 +628,7 @@ export default function WorkoutDetailScreen({
                             }}
                             style={styles.notesLinkRow}
                           >
-                            <Text style={styles.notesLink}>Add Note</Text>
+                            <Text style={[styles.notesLink, { color: accentDark }]}>Add Note</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -709,7 +711,7 @@ export default function WorkoutDetailScreen({
                       <Text
                         style={[
                           styles.measureUnitOptionText,
-                          newExerciseMeasureUnit === opt && styles.measureUnitOptionTextSelected,
+                          newExerciseMeasureUnit === opt && [styles.measureUnitOptionTextSelected, { color: accentDark }],
                         ]}
                       >
                         {opt === 'stopwatch' ? 'Stopwatch' : 'Sets / Reps'}
@@ -735,6 +737,7 @@ export default function WorkoutDetailScreen({
                 style={[
                   styles.addExerciseBtn,
                   styles.addExerciseBtnFull,
+                  { backgroundColor: accent },
                   (!newExerciseName.trim() || addingExercise) &&
                     styles.addExerciseBtnDisabled,
                 ]}
@@ -763,7 +766,6 @@ const styles = StyleSheet.create({
   errorRetryBtn: {
     paddingVertical: 10,
     paddingHorizontal: 24,
-    backgroundColor: '#f59e0b',
     borderRadius: 10,
   },
   errorRetryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
@@ -783,7 +785,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   backBtn: {
-    color: '#d97706',
     fontSize: 16,
     fontWeight: '500',
     marginRight: 16,
@@ -795,7 +796,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1c1917',
     borderBottomWidth: 1,
-    borderBottomColor: '#f59e0b',
     paddingVertical: 0,
   },
   dateSubtitle: { fontSize: 13, color: '#78716c', marginTop: 2 },
@@ -846,7 +846,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff7ed',
     borderBottomWidth: 1,
-    borderBottomColor: '#f59e0b',
     flex: 1,
     paddingVertical: 0,
   },
@@ -861,7 +860,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   setRowEditing: {
-    backgroundColor: '#f59e0b',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 8,
@@ -908,7 +906,6 @@ const styles = StyleSheet.create({
   addSetNotesColumn: { marginTop: 8 },
   addSetRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addSetRowEditing: {
-    backgroundColor: '#f59e0b',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 8,
@@ -933,10 +930,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   addSetBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  addSetBtnText: { color: '#d97706', fontWeight: '600', fontSize: 14 },
+  addSetBtnText: { fontWeight: '600', fontSize: 14 },
   cancelBtn: { paddingHorizontal: 8 },
   cancelBtnText: { color: '#78716c', fontSize: 14 },
-  addSetLink: { marginTop: 0, fontSize: 14, color: '#d97706', fontWeight: '600' },
+  addSetLink: { marginTop: 0, fontSize: 14, fontWeight: '600' },
   addSetNotesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -944,7 +941,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   notesLinkRow: { flexDirection: 'row', alignItems: 'center' },
-  notesLink: { fontSize: 14, color: '#d97706', fontWeight: '600' },
+  notesLink: { fontSize: 14, fontWeight: '600' },
   cardBodyWrapper: {
     backgroundColor: '#fff4e6',
     padding: 16,
@@ -986,7 +983,6 @@ const styles = StyleSheet.create({
   notesSubmitBtn: {
     width: 32,
     height: 32,
-    backgroundColor: '#f59e0b',
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1073,7 +1069,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f59e0b',
     borderRadius: 12,
     marginTop: 12,
   },
@@ -1128,7 +1123,6 @@ const styles = StyleSheet.create({
     color: '#44403c',
   },
   measureUnitOptionTextSelected: {
-    color: '#d97706',
     fontWeight: '600',
   },
   stopwatchEditContainer: {

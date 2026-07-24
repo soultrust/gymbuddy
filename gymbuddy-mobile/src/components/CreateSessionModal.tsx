@@ -12,6 +12,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker'
 
 import { apiRequest } from '../api/client'
+import { useAccent } from '../contexts/AccentContext'
 import type { Workout, TemplateSource } from '../types/workout'
 import { formatSessionDate } from '../utils/format'
 
@@ -30,6 +31,7 @@ export default function CreateSessionModal({
   token,
   workouts,
 }: Props) {
+  const { accent } = useAccent()
   const [createDate, setCreateDate] = useState(() => new Date())
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [createTitle, setCreateTitle] = useState('')
@@ -280,7 +282,7 @@ export default function CreateSessionModal({
                     style={styles.datePickerDoneBtn}
                     onPress={() => setShowDatePicker(false)}
                   >
-                    <Text style={styles.datePickerDoneText}>Done</Text>
+                    <Text style={[styles.datePickerDoneText, { color: accent }]}>Done</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -311,6 +313,7 @@ export default function CreateSessionModal({
               <TouchableOpacity
                 style={[
                   styles.modalCreateBtn,
+                  { backgroundColor: accent },
                   createSubmitting && styles.modalCreateBtnDisabled,
                 ]}
                 onPress={handleCreateSubmit}
@@ -463,7 +466,6 @@ const styles = StyleSheet.create({
   datePickerDoneText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#d97706',
   },
   modalTextArea: {
     minHeight: 80,
@@ -492,7 +494,6 @@ const styles = StyleSheet.create({
   modalCreateBtn: {
     paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#f59e0b',
     borderRadius: 12,
     minWidth: 100,
     alignItems: 'center',

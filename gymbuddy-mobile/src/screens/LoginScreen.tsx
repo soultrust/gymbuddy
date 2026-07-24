@@ -13,9 +13,11 @@ import {
 import { sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
+import { useAccent } from '../contexts/AccentContext'
 
 export default function LoginScreen() {
   const { login, signUp } = useAuth()
+  const { accent } = useAccent()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -93,7 +95,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
       )}
       <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: accent }, loading && styles.buttonDisabled]}
         onPress={handleSubmit}
         disabled={loading}
       >
@@ -157,7 +159,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   button: {
-    backgroundColor: '#f59e0b',
     padding: 16,
     borderRadius: 12,
     marginTop: 8,

@@ -2,14 +2,23 @@ import React from 'react'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { useTimer } from '../contexts/TimerContext'
+import { useAccent } from '../contexts/AccentContext'
 
 export default function TimerFAB() {
   const { toggleOverlay, isOverlayOpen, isRunning } = useTimer()
+  const { accent, accentDark } = useAccent()
 
   return (
     <View style={styles.container} pointerEvents="box-none">
       <TouchableOpacity
-        style={[styles.fab, isRunning && styles.fabRunning]}
+        style={[
+          styles.fab,
+          {
+            backgroundColor: isRunning ? accentDark : accent,
+            shadowColor: accentDark,
+            borderColor: isRunning ? accent : accent + 'aa',
+          },
+        ]}
         onPress={toggleOverlay}
         activeOpacity={0.82}
       >
@@ -34,21 +43,12 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#f59e0b',
     alignItems: 'center',
     justifyContent: 'center',
-    // Juicy shadow
-    shadowColor: '#d97706',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.75,
     shadowRadius: 14,
     elevation: 16,
-    // Slightly warm border glow
     borderWidth: 2,
-    borderColor: '#fbbf24',
-  },
-  fabRunning: {
-    backgroundColor: '#d97706',
-    borderColor: '#f59e0b',
   },
 })
