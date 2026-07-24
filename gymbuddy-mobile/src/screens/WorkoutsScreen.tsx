@@ -198,7 +198,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 color={collapseEmpty ? '#d97706' : '#a8a29e'}
               />
               <Text style={styles.menuCheckboxLabel}>
-                Hide days that have no data for this exercise
+                Hide days that have no data
               </Text>
             </TouchableOpacity>
 
@@ -312,7 +312,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   >
                     <View style={styles.tdTitle}>
                       <Text style={styles.rowTitle} numberOfLines={1}>
-                        {item.name || formatMonthDay(item.date)}
+                        {formatMonthDay(item.date)}
                       </Text>
                     </View>
                     <View style={styles.tdExercise}>

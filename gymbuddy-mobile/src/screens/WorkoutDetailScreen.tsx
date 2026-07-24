@@ -265,6 +265,14 @@ export default function WorkoutDetailScreen({
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardBodyWrapper}>
+                      {pe.note_for_next_time && expandedNotesFor !== pe.id && (
+                        <View style={styles.noteReminder}>
+                          <Text style={styles.noteReminderText}>
+                            {pe.note_for_next_time}
+                          </Text>
+                        </View>
+                      )}
+
                       {pe.sets.map((s, index) =>
                         editingSetId === s.id ? (
                           <TouchableWithoutFeedback key={s.id} onPress={() => {}}>
@@ -425,14 +433,6 @@ export default function WorkoutDetailScreen({
                             </TouchableOpacity>
                           </View>
                         ),
-                      )}
-
-                      {pe.note_for_next_time && expandedNotesFor !== pe.id && (
-                        <View style={styles.noteReminder}>
-                          <Text style={styles.noteReminderText}>
-                            {pe.note_for_next_time}
-                          </Text>
-                        </View>
                       )}
 
                       {expandedNotesFor === pe.id && (

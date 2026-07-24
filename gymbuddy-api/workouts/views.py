@@ -122,11 +122,6 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
-        session = serializer.instance
-        exercise_ids = list(
-            session.exercises.values_list("exercise_id", flat=True).distinct()
-        )
-        UserExerciseNote.clear_for_exercises(session.user_id, exercise_ids)
 
     @action(detail=False, methods=["get"])
     def user_exercises(self, request):
@@ -259,7 +254,6 @@ class PerformedExerciseViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save(performed_exercise=exercise)
-        UserExerciseNote.clear_for(request.user, exercise.exercise_id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
@@ -295,10 +289,6 @@ class SetEntryViewSet(
 
     def perform_update(self, serializer):
         serializer.save()
-        instance = serializer.instance
-        UserExerciseNote.clear_for(
-            self.request.user, instance.performed_exercise.exercise_id
-        )
 
     def perform_destroy(self, instance):
         performed_exercise_id = instance.performed_exercise_id
