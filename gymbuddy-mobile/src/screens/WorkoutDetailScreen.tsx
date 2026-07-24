@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   setLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  setLabel: { fontSize: 21, color: '#44403c' },
+  setLabel: { fontSize: 21, fontFamily: typography.font.bodyBold, fontWeight: '700', color: '#44403c' },
   setValueTouchable: {
     flex: 1,
     flexDirection: 'row',
@@ -831,11 +831,12 @@ const styles = StyleSheet.create({
   stepperValue: {
     minWidth: 32,
     fontSize: 21,
-    fontWeight: '500',
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
     color: '#44403c',
     textAlign: 'center',
   },
-  setValue: { fontSize: 21, color: '#44403c' },
+  setValue: { fontSize: 21, fontFamily: typography.font.bodyBold, fontWeight: '700', color: '#44403c' },
   setInput: {
     width: 56,
     borderWidth: 1,
@@ -844,6 +845,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     fontSize: 21,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
     backgroundColor: '#fff4e6',
   },
   setEditRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -856,7 +859,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -11,
   },
   addSetCancelBtn: { padding: 4 },
-  addSetLabel: { fontSize: 21, fontWeight: '600', color: '#1c1917' },
+  addSetLabel: { fontSize: 21, fontFamily: typography.font.bodyBold, fontWeight: '700', color: '#1c1917' },
   addSetStepperCenter: {
     flex: 1,
     justifyContent: 'center',
