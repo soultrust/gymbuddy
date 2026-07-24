@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -12,12 +12,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker'
 
 import { apiRequest } from '../api/client'
-import type {
-  Workout,
-  PerformedExercise,
-  TemplateExercise,
-  TemplateSource,
-} from '../types/workout'
+import type { Workout, TemplateSource } from '../types/workout'
 import { formatSessionDate } from '../utils/format'
 
 type Props = {
@@ -35,7 +30,6 @@ export default function CreateSessionModal({
   token,
   workouts,
 }: Props) {
-  const [template, setTemplate] = useState<TemplateExercise[]>([])
   const [createDate, setCreateDate] = useState(() => new Date())
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [createTitle, setCreateTitle] = useState('')
@@ -46,19 +40,8 @@ export default function CreateSessionModal({
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
   const [sessionDropdownOpen, setSessionDropdownOpen] = useState(false)
 
-  const fetchTemplate = useCallback(async () => {
-    if (!token) return
-    try {
-      const data = await apiRequest<TemplateExercise[]>('/workouts/template/', { token })
-      setTemplate(Array.isArray(data) ? data : [])
-    } catch {
-      setTemplate([])
-    }
-  }, [token])
-
   useEffect(() => {
     if (visible) {
-      fetchTemplate()
       const today = new Date()
       setCreateDate(today)
       setCreateTitle(
@@ -74,7 +57,7 @@ export default function CreateSessionModal({
       setSelectedSessionId(null)
       setSessionDropdownOpen(false)
     }
-  }, [visible, fetchTemplate])
+  }, [visible])
 
   const close = () => {
     if (!createSubmitting) {
@@ -95,7 +78,13 @@ export default function CreateSessionModal({
         name: createTitle.trim(),
         notes: createNotes.trim() || '',
       }
-      if (templateSource === 'another' && selectedSessionId != null) {
+      if (templateSource === 'previous') {
+        // Use the most recent workout as the template via the backend copy path
+        const mostRecent = [...workouts].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        )[0]
+        if (mostRecent) body.template_session_id = mostRecent.id
+      } else if (templateSource === 'another' && selectedSessionId != null) {
         body.template_session_id = selectedSessionId
       }
       const workout = await apiRequest<Workout>('/workouts/', {
@@ -103,35 +92,6 @@ export default function CreateSessionModal({
         token,
         body,
       })
-      if (templateSource === 'previous' && template.length > 0) {
-        for (const t of template) {
-          const performed = await apiRequest<PerformedExercise>(
-            `/workouts/${workout.id}/exercises/`,
-            {
-              method: 'POST',
-              token,
-              body: {
-                exercise: t.exercise.id,
-                user_preferred_name: t.user_preferred_name || '',
-                order: t.order,
-              },
-            },
-          )
-          const sets = t.last_sets ?? []
-          for (const s of sets) {
-            await apiRequest(`/performed-exercises/${performed.id}/sets/`, {
-              method: 'POST',
-              token,
-              body: {
-                order: s.order,
-                reps: s.reps,
-                weight: s.weight != null && s.weight !== '' ? Number(s.weight) : null,
-                notes: s.notes ?? '',
-              },
-            })
-          }
-        }
-      }
       onCreated(workout.id)
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create workout')
@@ -180,11 +140,6 @@ export default function CreateSessionModal({
               <Text style={styles.radioLabel}>Use previous session as starting template</Text>
             </TouchableOpacity>
 
-            {templateSource === 'previous' && template.length > 0 && (
-              <Text style={styles.modalTemplate}>
-                {template.map((t) => t.exercise.name).join(', ')}
-              </Text>
-            )}
 
             <TouchableOpacity
               style={styles.radioRow}
@@ -254,22 +209,6 @@ export default function CreateSessionModal({
                     </View>
                   )}
                 </View>
-                {selectedSessionId != null &&
-                  (() => {
-                    const w = workouts.find((wo) => wo.id === selectedSessionId)
-                    const exercises =
-                      w?.exercises
-                        ?.map(
-                          (pe) => pe.user_preferred_name || pe.exercise?.name || '',
-                        )
-                        .filter(Boolean) ?? []
-                    if (exercises.length === 0) return null
-                    return (
-                      <Text style={styles.sessionExercisesPreview}>
-                        {exercises.join(', ')}
-                      </Text>
-                    )
-                  })()}
               </>
             )}
 
@@ -460,19 +399,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: '#44403c',
-  },
-  modalTemplate: {
-    fontSize: 14,
-    color: '#57534e',
-    marginBottom: 16,
-    marginLeft: 34,
-  },
-  sessionExercisesPreview: {
-    fontSize: 14,
-    color: '#57534e',
-    marginTop: 2,
-    marginBottom: 16,
-    marginLeft: 34,
   },
   sessionDropdownWrapper: {
     marginLeft: 34,
