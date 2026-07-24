@@ -14,6 +14,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { useAuth } from '../contexts/AuthContext'
 import { useAccent } from '../contexts/AccentContext'
 import { colorTokens, space, radius, typography, shadow } from '../theme/tokens'
+import { colors } from '../theme/colors'
 import { apiRequest } from '../api/client'
 import type { Workout, PerformedExercise } from '../types/workout'
 import { formatNumber, formatWeight, formatMonthDay } from '../utils/format'
@@ -236,7 +237,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   onPress={() => setShowMenu(true)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="menu-outline" size={28} color="#fff4e6" />
+                  <Ionicons name="menu-outline" size={28} color={colors.brown900} />
                 </TouchableOpacity>
               </View>
               <View style={styles.thExercise}>
@@ -247,7 +248,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 >
                   <ArrowIcon
                     direction="left"
-                    color={canGoPrev ? '#fff4e6' : 'rgb(255 255 255 / 0.3)'}
+                    color={canGoPrev ? colors.brown900 : 'rgba(90, 74, 47, 0.3)'}
                   />
                 </TouchableOpacity>
                 <View style={styles.exerciseNameColumn}>
@@ -271,7 +272,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 >
                   <ArrowIcon
                     direction="right"
-                    color={canGoNext ? '#fff4e6' : 'rgb(255 255 255 / 0.3)'}
+                    color={canGoNext ? colors.brown900 : 'rgba(90, 74, 47, 0.3)'}
                   />
                 </TouchableOpacity>
               </View>
@@ -317,7 +318,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#c9a882',
+    backgroundColor: colors.detailBg,
   },
   accentSwatchActive: {
     borderWidth: 2.5,
@@ -428,9 +429,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
-    backgroundColor: '#5A4A2F',
+    backgroundColor: colors.tableHeader,
     alignItems: 'center',
   },
   thAddButton: {
@@ -473,21 +472,15 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.brown900,
     textAlign: 'center',
     marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
   },
   exerciseCounter: {
     fontSize: 11,
-    color: '#ffffff',
+    color: colors.brown900,
     marginBottom: 4,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
   },
   row: {
     flexDirection: 'row',

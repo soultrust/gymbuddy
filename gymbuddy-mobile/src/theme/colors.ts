@@ -17,6 +17,11 @@ export const colors = {
   tan: '#c9a882',
   tanDark: '#9e6e38',
 
+  // Shared app background zones
+  detailBg: '#b8a898',       // main bg — warm gray
+  detailZoneDark: '#7a6a5a', // add-exercise zone — muted warm gray-brown
+  tableHeader: 'transparent', // table / card header bars (list + detail)
+
   // Stone palette (warm grays)
   stone900: '#1c1917',
   stone800: '#292524',

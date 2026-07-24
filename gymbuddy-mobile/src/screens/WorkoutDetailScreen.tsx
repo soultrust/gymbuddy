@@ -215,7 +215,7 @@ export default function WorkoutDetailScreen({
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         style={{ padding: 2 }}
                       >
-                        <Ionicons name="close-outline" size={24} color="#fff7ed" />
+                        <Ionicons name="close-outline" size={24} color={colors.brown900} />
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardBodyWrapper}>
@@ -704,7 +704,7 @@ export default function WorkoutDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.cream },
+  container: { flex: 1, backgroundColor: colors.detailBg },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   },
   errorRetryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   subheader: {
-    backgroundColor: colors.cream,
+    backgroundColor: colors.detailBg,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 8,
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
   },
   deleteBtn: { padding: 4 },
   content: { flex: 1 },
-  contentInner: { padding: 24, paddingBottom: 32, backgroundColor: '#c9a882' },
+  contentInner: { padding: 24, paddingBottom: 32, backgroundColor: colors.detailBg },
   empty: {
     textAlign: 'center',
     color: '#78716c',
@@ -776,18 +776,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#5A4A2F',
+    backgroundColor: colors.tableHeader,
     paddingLeft: 16,
     paddingRight: 6,
     paddingVertical: 10,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
-  exerciseName: { fontSize: 16, fontWeight: '600', color: '#fff7ed' },
+  exerciseName: { fontSize: 16, fontWeight: '600', color: colors.brown900 },
   exerciseNameInput: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff7ed',
+    color: colors.brown900,
     borderBottomWidth: 1,
     flex: 1,
     paddingVertical: 0,
@@ -972,7 +972,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 8,
-    backgroundColor: colors.tanDark,
+    backgroundColor: colors.detailZoneDark,
   },
   addPastExerciseSection: { marginTop: 0 },
   addPastExerciseLabel: {
