@@ -355,26 +355,30 @@ export default function WorkoutDetailScreen({
                               activeOpacity={0.7}
                             >
                               {pe.measure_unit === 'stopwatch' ? (
-                                <View style={styles.setRepsCentered}>
-                                  <Text style={styles.setValue}>
-                                    {formatDuration(Number(s.reps))}
-                                  </Text>
+                                <View style={styles.setPair}>
+                                  <View style={styles.setRepsCentered}>
+                                    <Text style={styles.setValue}>
+                                      {formatDuration(Number(s.reps))}
+                                    </Text>
+                                  </View>
                                 </View>
                               ) : (
-                                <>
+                                <View style={styles.setPair}>
                                   <View style={styles.setRepsCentered}>
                                     <Text style={styles.setValue}>
                                       {formatNumber(s.reps)} reps
                                     </Text>
                                   </View>
                                   {!isBodyweight && (
-                                    <Text style={styles.setValue}>
-                                      {formatWeight(s.weight)
-                                        ? `${formatWeight(s.weight)} lbs`
-                                        : '—'}
-                                    </Text>
+                                    <View style={styles.setWeightChip}>
+                                      <Text style={styles.setValue}>
+                                        {formatWeight(s.weight)
+                                          ? `${formatWeight(s.weight)} lbs`
+                                          : '—'}
+                                      </Text>
+                                    </View>
                                   )}
-                                </>
+                                </View>
                               )}
                             </TouchableOpacity>
                           </View>
@@ -815,10 +819,32 @@ const styles = StyleSheet.create({
   setValueTouchable: {
     flex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'flex-end',
   },
-  setRepsCentered: { flex: 1, alignItems: 'center' },
+  setPair: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.stone700,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  setRepsCentered: {
+    flexGrow: 0,
+    flexShrink: 0,
+    alignItems: 'center',
+    backgroundColor: colors.setRowBgTint,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  setWeightChip: {
+    backgroundColor: colors.setRowBg,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.stone700,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
   setInputCentered: { textAlign: 'center' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   stepperBtn: {
