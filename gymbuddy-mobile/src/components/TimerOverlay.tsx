@@ -4,6 +4,7 @@ import {
   Modal,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -132,6 +133,8 @@ export default function TimerOverlay() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* White status bar icons on dark backdrop */}
+      <StatusBar barStyle="light-content" />
       {/* ── Dark backdrop (blocks touches to content below) ── */}
       <View style={styles.backdrop} />
 

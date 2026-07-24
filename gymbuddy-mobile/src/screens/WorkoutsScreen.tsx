@@ -387,6 +387,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e7e5e4',
+    zIndex: 200,
+    elevation: 200, // Android
   },
   headerLeft: {
     flex: 1,
