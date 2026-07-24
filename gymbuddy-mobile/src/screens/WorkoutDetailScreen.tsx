@@ -677,7 +677,7 @@ export default function WorkoutDetailScreen({
                 placeholderTextColor="#a8a29e"
               />
 
-              <Text style={styles.addExerciseFieldLabel}>Measure Unit</Text>
+              <Text style={styles.addExerciseFieldLabel}>Track by</Text>
               <TouchableOpacity
                 style={styles.measureUnitDropdownTrigger}
                 onPress={() => setMeasureUnitDropdownOpen((o) => !o)}
