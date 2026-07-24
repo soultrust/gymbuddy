@@ -14,6 +14,7 @@ export const colors = {
 
   // Set row — darker warm gray (not orange) to contrast cream cards
   setRowBg: '#ddd9d5',
+  setRowBgTint: '#9aefe4', // light but more saturated turquoise for reps chips
 
   // Brown palette
   brown900: '#5A4A2F',
