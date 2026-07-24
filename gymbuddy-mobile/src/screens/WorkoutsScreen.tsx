@@ -5,12 +5,12 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
+import { Text } from '../components/AppText'
 import { useAuth } from '../contexts/AuthContext'
 import { useAccent } from '../contexts/AccentContext'
 import { colorTokens, space, radius, typography, shadow } from '../theme/tokens'
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   table: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cream,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -470,8 +470,9 @@ const styles = StyleSheet.create({
     color: '#a8a29e',
   },
   exerciseName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
     color: colors.brown900,
     textAlign: 'center',
     marginBottom: 8,
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#f5f5f4',
-    backgroundColor: '#fff4e6',
+    backgroundColor: colors.cream,
   },
   tdTitle: {
     width: 75,
@@ -504,12 +505,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowTitle: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 18,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
     color: '#1c1917',
   },
   dash: {
-    fontSize: 14,
+    fontSize: 17,
     color: '#57534e',
   },
   chipRow: {
@@ -545,11 +547,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
   },
   chipText: {
-    fontSize: 15,
+    fontSize: 18,
     color: '#000',
   },
   chipRepsText: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
     color: '#000',
   },

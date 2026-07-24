@@ -4,13 +4,12 @@ import {
   Modal,
   Platform,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 
+import { Text, TextInput } from './AppText'
 import { apiRequest } from '../api/client'
 import { formatFullDateFromDate } from '../utils/format'
 import { useAccent } from '../contexts/AccentContext'

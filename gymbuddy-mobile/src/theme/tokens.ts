@@ -96,6 +96,11 @@ export const radius = {
 
 // ─── Typography tokens ─────────────────────────────────────────────────────────
 export const typography = {
+  font: {
+    body:     'Lato_400Regular',  // default UI text + inputs
+    bodyBold: 'Lato_700Bold',     // emphatic body text
+    display:  'Oswald_500Medium', // GYMBUDDY wordmark
+  },
   size: {
     xs:   11,  // uppercase labels, captions
     sm:   13,  // secondary labels, hints

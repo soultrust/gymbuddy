@@ -3,7 +3,9 @@ import { View, StyleSheet } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { useFonts, Oswald_500Medium } from '@expo-google-fonts/oswald'
+import { useFonts } from 'expo-font'
+import { Oswald_500Medium } from '@expo-google-fonts/oswald'
+import { Lato_400Regular, Lato_700Bold } from '@expo-google-fonts/lato'
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext'
 import { TimerProvider } from './src/contexts/TimerContext'
@@ -57,7 +59,11 @@ function AppNavigator() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ Oswald_500Medium })
+  const [fontsLoaded] = useFonts({
+    Oswald_500Medium,
+    Lato_400Regular,
+    Lato_700Bold,
+  })
   if (!fontsLoaded) return null
 
   return (

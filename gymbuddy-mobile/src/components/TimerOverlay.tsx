@@ -6,14 +6,13 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import * as DocumentPicker from 'expo-document-picker'
+import { Text, TextInput } from './AppText'
 import { useTimer } from '../contexts/TimerContext'
 import { useAccent } from '../contexts/AccentContext'
 import type { TimerPreset } from '../types/timer'

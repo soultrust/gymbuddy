@@ -5,13 +5,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '../lib/firebase'
+import { Text, TextInput } from '../components/AppText'
 import { useAuth } from '../contexts/AuthContext'
 import { useAccent } from '../contexts/AccentContext'
 

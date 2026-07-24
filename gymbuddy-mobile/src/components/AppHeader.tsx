@@ -3,12 +3,12 @@ import {
   Alert,
   Modal,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import { Text } from './AppText'
 import { useAuth } from '../contexts/AuthContext'
 import { colorTokens, space, radius, shadow, typography } from '../theme/tokens'
 
@@ -104,13 +104,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: typography.size.hero,
-    fontFamily: 'Oswald_500Medium',
+    fontFamily: typography.font.display,
     letterSpacing: 0.5,
   },
   titleGym: {
+    fontFamily: typography.font.display,
     color: 'rgba(146, 64, 14, 0.5)',
   },
   titleBuddy: {
+    fontFamily: typography.font.display,
     color: '#92400e',
   },
 

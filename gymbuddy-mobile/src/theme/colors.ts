@@ -12,6 +12,9 @@ export const colors = {
   creamLight: '#fff7ed',
   creamDark: '#ffe5d0',
 
+  // Set row — darker warm gray (not orange) to contrast cream cards
+  setRowBg: '#ddd9d5',
+
   // Brown palette
   brown900: '#5A4A2F',
   tan: '#c9a882',
@@ -19,6 +22,7 @@ export const colors = {
 
   // Shared app background zones
   detailBg: '#b8a898',       // main bg — warm gray
+  detailBgLight: '#d4ccc5',  // subheader / lighter surface on detail page
   detailZoneDark: '#7a6a5a', // add-exercise zone — muted warm gray-brown
   tableHeader: 'transparent', // table / card header bars (list + detail)
 

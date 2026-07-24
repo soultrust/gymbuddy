@@ -3,20 +3,20 @@ import {
   Animated,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
+import { Text, TextInput } from '../components/AppText'
 import { useAuth } from '../contexts/AuthContext'
 import { formatWeight, formatFullDate, formatNumber } from '../utils/format'
 import { stepRepsValue } from '../utils/numberInput'
 import ArrowIcon from '../components/ArrowIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { colors } from '../theme/colors'
+import { typography } from '../theme/tokens'
 import { useAccent } from '../contexts/AccentContext'
 import { useWorkoutDetail } from '../hooks/useWorkoutDetail'
 
@@ -219,14 +219,6 @@ export default function WorkoutDetailScreen({
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardBodyWrapper}>
-                      {pe.note_for_next_time && expandedNotesFor !== pe.id && (
-                        <View style={styles.noteReminder}>
-                          <Text style={styles.noteReminderText}>
-                            {pe.note_for_next_time}
-                          </Text>
-                        </View>
-                      )}
-
                       {pe.sets.map((s, index) =>
                         editingSetId === s.id ? (
                           <TouchableWithoutFeedback key={s.id} onPress={() => {}}>
@@ -387,6 +379,14 @@ export default function WorkoutDetailScreen({
                             </TouchableOpacity>
                           </View>
                         ),
+                      )}
+
+                      {pe.note_for_next_time && expandedNotesFor !== pe.id && (
+                        <View style={styles.noteReminder}>
+                          <Text style={styles.noteReminderText}>
+                            {pe.note_for_next_time}
+                          </Text>
+                        </View>
                       )}
 
                       {expandedNotesFor === pe.id && (
@@ -720,7 +720,7 @@ const styles = StyleSheet.create({
   },
   errorRetryText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   subheader: {
-    backgroundColor: colors.detailBg,
+    backgroundColor: colors.detailBgLight,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 8,
@@ -783,10 +783,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
-  exerciseName: { fontSize: 16, fontWeight: '600', color: colors.brown900 },
+  exerciseName: { fontSize: 20, fontFamily: typography.font.bodyBold, fontWeight: '700', color: colors.brown900 },
   exerciseNameInput: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
     color: colors.brown900,
     borderBottomWidth: 1,
     flex: 1,
@@ -797,7 +798,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
-    backgroundColor: '#ffedd2',
+    backgroundColor: colors.setRowBg,
     borderRadius: 6,
     paddingVertical: 6,
     paddingHorizontal: 8,
@@ -810,7 +811,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   setLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  setLabel: { fontSize: 18, color: '#44403c' },
+  setLabel: { fontSize: 21, color: '#44403c' },
   setValueTouchable: {
     flex: 1,
     flexDirection: 'row',
@@ -829,12 +830,12 @@ const styles = StyleSheet.create({
   },
   stepperValue: {
     minWidth: 32,
-    fontSize: 18,
+    fontSize: 21,
     fontWeight: '500',
     color: '#44403c',
     textAlign: 'center',
   },
-  setValue: { fontSize: 18, color: '#44403c' },
+  setValue: { fontSize: 21, color: '#44403c' },
   setInput: {
     width: 56,
     borderWidth: 1,
@@ -842,7 +843,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    fontSize: 18,
+    fontSize: 21,
     backgroundColor: '#fff4e6',
   },
   setEditRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -855,7 +856,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -11,
   },
   addSetCancelBtn: { padding: 4 },
-  addSetLabel: { fontSize: 18, fontWeight: '600', color: '#1c1917' },
+  addSetLabel: { fontSize: 21, fontWeight: '600', color: '#1c1917' },
   addSetStepperCenter: {
     flex: 1,
     justifyContent: 'center',
@@ -870,13 +871,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    fontSize: 14,
+    fontSize: 16,
   },
   addSetBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  addSetBtnText: { fontWeight: '600', fontSize: 14 },
+  addSetBtnText: { fontWeight: '600', fontSize: 16 },
   cancelBtn: { paddingHorizontal: 8 },
-  cancelBtnText: { color: '#78716c', fontSize: 14 },
-  addSetLink: { marginTop: 0, fontSize: 14, fontWeight: '600' },
+  cancelBtnText: { color: '#78716c', fontSize: 16 },
+  addSetLink: { marginTop: 0, fontSize: 18, fontWeight: '600' },
   addSetNotesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -884,7 +885,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   notesLinkRow: { flexDirection: 'row', alignItems: 'center' },
-  notesLink: { fontSize: 14, fontWeight: '600' },
+  notesLink: { fontSize: 18, fontWeight: '600' },
   cardBodyWrapper: {
     backgroundColor: '#fff4e6',
     padding: 16,
@@ -894,7 +895,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: '#ffedd2',
+    backgroundColor: colors.setRowBg,
     borderRadius: 8,
   },
   notesFromLastTimeLabel: {
@@ -933,7 +934,7 @@ const styles = StyleSheet.create({
   noteReminder: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#f5ee90',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -941,9 +942,9 @@ const styles = StyleSheet.create({
   },
   noteReminderText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#92400e',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   notesInput: {
     flex: 1,
@@ -988,7 +989,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginBottom: 4,
-    backgroundColor: '#ffedd2',
+    backgroundColor: colors.setRowBg,
     borderRadius: 8,
   },
   addPastExerciseItemText: { fontSize: 14, color: '#44403c', fontWeight: '500' },
@@ -1079,7 +1080,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stopwatchFieldLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#44403c',
     fontWeight: '500',
     flex: 1,

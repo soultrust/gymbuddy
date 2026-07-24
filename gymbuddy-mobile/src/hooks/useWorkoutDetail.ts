@@ -535,9 +535,9 @@ export function useWorkoutDetail(
     const note = (getNotesFor(peId).nextTimeNote ?? '').trim()
     const original = (originalNote ?? '').trim()
     if (note === original) {
-      // Unchanged — switch to view mode if note exists, else close panel
+      // Unchanged — collapse to yellow read-only (or close if empty)
       setEditingNoteFor(null)
-      if (!note) setExpandedNotesFor(null)
+      setExpandedNotesFor(null)
       return
     }
     try {
@@ -548,7 +548,7 @@ export function useWorkoutDetail(
       })
       await fetchWorkout()
       setEditingNoteFor(null)
-      if (!note) setExpandedNotesFor(null)
+      setExpandedNotesFor(null)
     } catch (e) {
       Alert.alert('Could not save note', (e as Error)?.message ?? 'Please try again.')
     }
