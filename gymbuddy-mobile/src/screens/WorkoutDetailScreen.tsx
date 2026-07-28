@@ -902,10 +902,10 @@ const styles = StyleSheet.create({
   addPastExerciseLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#78716c',
+    color: colors.cream,
     marginBottom: 8,
   },
-  addPastExerciseHint: { fontWeight: '400', color: '#a8a29e' },
+  addPastExerciseHint: { fontWeight: '400', color: colors.creamDark },
   addPastExerciseList: { maxHeight: 200 },
   addPastExerciseItem: {
     paddingVertical: 8,
