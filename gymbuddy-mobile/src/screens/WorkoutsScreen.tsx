@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import {
-  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,7 +12,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { Text } from '../components/AppText'
 import { useAuth } from '../contexts/AuthContext'
 import { useAccent } from '../contexts/AccentContext'
-import { colorTokens, space, radius, typography, shadow } from '../theme/tokens'
+import { typography } from '../theme/tokens'
 import { colors } from '../theme/colors'
 import { apiRequest } from '../api/client'
 import type { Workout, PerformedExercise } from '../types/workout'
@@ -37,7 +36,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
   const [collapseEmpty, setCollapseEmpty] = useState(true)
 
   const fetchWorkouts = useCallback(async () => {
@@ -161,55 +159,29 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         workouts={workouts}
       />
 
-      <Modal
-        visible={showMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMenu(false)}
-      >
+      <View style={styles.toolbar}>
         <TouchableOpacity
-          style={styles.menuOverlay}
-          onPress={() => setShowMenu(false)}
-          activeOpacity={1}
+          style={[styles.addSessionBtn, { backgroundColor: accent }]}
+          onPress={() => setShowCreateForm(true)}
+          activeOpacity={0.8}
         >
-          <TouchableOpacity
-            style={styles.menuCard}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <Text style={styles.menuTitle}>Options</Text>
-
-            <TouchableOpacity
-              style={styles.menuCheckboxRow}
-              onPress={() => setCollapseEmpty((v) => !v)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={collapseEmpty ? 'checkbox' : 'square-outline'}
-                size={22}
-                color={collapseEmpty ? accent : '#a8a29e'}
-              />
-              <Text style={styles.menuCheckboxLabel}>
-                Hide days that have no data
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.menuDivider} />
-
-            <TouchableOpacity
-              style={[styles.menuAddBtn, { backgroundColor: accent }]}
-              onPress={() => {
-                setShowMenu(false)
-                setShowCreateForm(true)
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.menuAddBtnText}>Add New Session</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+          <Ionicons name="add" size={20} color="#fff" />
+          <Text style={styles.addSessionBtnText}>Add New Session</Text>
         </TouchableOpacity>
-      </Modal>
+
+        <TouchableOpacity
+          style={styles.hideEmptyRow}
+          onPress={() => setCollapseEmpty((v) => !v)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={collapseEmpty ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={collapseEmpty ? accent : '#a8a29e'}
+          />
+          <Text style={styles.hideEmptyLabel}>Hide days that have no data</Text>
+        </TouchableOpacity>
+      </View>
 
       {workouts.length === 0 ? (
         <View style={styles.emptyState}>
@@ -218,13 +190,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             Use the same email on web and here to see the same data. If you
             added workouts on the web, log out and log in again with that email.
           </Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowCreateForm(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add" size={24} color={accent} />
-          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView
@@ -236,15 +201,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         >
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <View style={styles.thAddButton}>
-                <TouchableOpacity
-                  style={styles.menuButton}
-                  onPress={() => setShowMenu(true)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="menu-outline" size={28} color={colors.brown900} />
-                </TouchableOpacity>
-              </View>
+              <View style={styles.thDateSpacer} />
               <View style={styles.thExercise}>
                 <TouchableOpacity
                   onPress={() => setExerciseIndex((i) => Math.max(0, i - 1))}
@@ -328,17 +285,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.detailBg,
   },
-  accentSwatchActive: {
-    borderWidth: 2.5,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
   scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1, padding: 24, paddingBottom: 32 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  addSessionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  addSessionBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  hideEmptyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+    maxWidth: '48%',
+  },
+  hideEmptyLabel: {
+    flexShrink: 1,
+    fontSize: 13,
+    color: '#44403c',
+    lineHeight: 18,
+  },
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -357,74 +340,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 24,
   },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  menuCard: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  menuTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1c1917',
-    marginBottom: 20,
-  },
-  menuCheckboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 4,
-  },
-  menuCheckboxLabel: {
-    flex: 1,
-    fontSize: 15,
-    color: '#44403c',
-    lineHeight: 20,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#e7e5e4',
-    marginVertical: 20,
-  },
-  menuAddBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 12,
-    paddingVertical: 14,
-  },
-  menuAddBtnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
   table: {
     backgroundColor: colors.cream,
     borderRadius: 12,
@@ -440,9 +355,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tableHeader,
     alignItems: 'center',
   },
-  thAddButton: {
-    width: 80,
-    paddingHorizontal: 16,
+  thDateSpacer: {
+    width: 110,
   },
   thExercise: {
     flex: 1,
