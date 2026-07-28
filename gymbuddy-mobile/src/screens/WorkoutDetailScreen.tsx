@@ -73,7 +73,6 @@ export default function WorkoutDetailScreen({
     setEditingDate,
     editingDateValue,
     setEditingDateValue,
-    titleIncludesTime,
     getNoteValue,
     setNoteDraft,
     fadeAnim,
@@ -180,7 +179,7 @@ export default function WorkoutDetailScreen({
                 activeOpacity={0.7}
               >
                 <Text style={styles.title} numberOfLines={1}>
-                  {formatSessionTitle(workout.date, titleIncludesTime)}
+                  {formatSessionTitle(workout.date)}
                 </Text>
               </TouchableOpacity>
             )}

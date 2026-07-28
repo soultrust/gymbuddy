@@ -16,7 +16,7 @@ import { typography } from '../theme/tokens'
 import { colors } from '../theme/colors'
 import { apiRequest } from '../api/client'
 import type { Workout, PerformedExercise } from '../types/workout'
-import { formatNumber, formatWeight, formatSessionListTitle, calendarDayKey, daysWithMultipleSessions } from '../utils/format'
+import { formatNumber, formatWeight, formatSessionListTitle } from '../utils/format'
 import ArrowIcon from '../components/ArrowIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CreateSessionModal from '../components/CreateSessionModal'
@@ -95,11 +95,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     }
     return ids.map((id) => ({ id, name: map.get(id) ?? '' }))
   }, [workouts])
-
-  const multiSessionDays = useMemo(
-    () => daysWithMultipleSessions(workouts.map((w) => w.date)),
-    [workouts],
-  )
 
   const safeIndex = Math.min(exerciseIndex, Math.max(0, exerciseColumns.length - 1))
   const selectedExercise = exerciseColumns[safeIndex] ?? null
@@ -261,10 +256,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                   >
                     <View style={styles.tdTitle}>
                       <Text style={styles.rowTitle} numberOfLines={2}>
-                        {formatSessionListTitle(
-                          item.date,
-                          multiSessionDays.has(calendarDayKey(item.date)),
-                        )}
+                        {formatSessionListTitle(item.date)}
                       </Text>
                     </View>
                     <View style={styles.tdExercise}>
