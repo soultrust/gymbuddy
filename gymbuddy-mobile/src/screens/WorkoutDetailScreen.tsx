@@ -1,17 +1,19 @@
 import React, { useState } from 'react'
 import {
   Animated,
+  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { Text, TextInput } from '../components/AppText'
 import { useAuth } from '../contexts/AuthContext'
-import { formatWeight, formatFullDate, formatNumber } from '../utils/format'
+import { formatWeight, formatSessionTitle, formatNumber } from '../utils/format'
 import { stepRepsValue } from '../utils/numberInput'
 import ArrowIcon from '../components/ArrowIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -53,10 +55,6 @@ export default function WorkoutDetailScreen({
     setNewSetMinutes,
     newSetSeconds,
     setNewSetSeconds,
-    editingTitle,
-    setEditingTitle,
-    editingTitleValue,
-    setEditingTitleValue,
     editingExerciseId,
     setEditingExerciseId,
     editingExerciseName,
@@ -71,6 +69,11 @@ export default function WorkoutDetailScreen({
     setEditingSetMinutes,
     editingSetSeconds,
     setEditingSetSeconds,
+    editingDate,
+    setEditingDate,
+    editingDateValue,
+    setEditingDateValue,
+    titleIncludesTime,
     getNoteValue,
     setNoteDraft,
     fadeAnim,
@@ -79,10 +82,10 @@ export default function WorkoutDetailScreen({
     handleAddSet,
     saveSetToApi,
     handleSaveSet,
+    handleSaveDate,
     confirmDeleteSet,
     confirmDeleteExercise,
     handleDeleteWorkout,
-    handleSaveTitle,
     handleSaveExerciseName,
     handleAddExercise,
     handleAddPastExercise,
@@ -125,7 +128,7 @@ export default function WorkoutDetailScreen({
 
   return (
     <View style={styles.container}>
-      {/* ── Subheader: Back + session title, sits directly below AppHeader ── */}
+      {/* ── Subheader: Back + session date title, sits directly below AppHeader ── */}
       <View style={styles.subheader}>
         <View style={styles.subheaderRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -134,39 +137,64 @@ export default function WorkoutDetailScreen({
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            {editingTitle ? (
-              <TextInput
-                style={[styles.titleInput, { borderBottomColor: accent }]}
-                value={editingTitleValue}
-                onChangeText={setEditingTitleValue}
-                onBlur={handleSaveTitle}
-                onSubmitEditing={handleSaveTitle}
-                autoFocus
-                returnKeyType="done"
-                selectTextOnFocus
-              />
+            {editingDate ? (
+              <View style={styles.dateEditContainer}>
+                <DateTimePicker
+                  value={editingDateValue || new Date(workout.date)}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_event: unknown, selectedDate?: Date) => {
+                    if (Platform.OS === 'android') setEditingDate(false)
+                    if (selectedDate) {
+                      // Keep original time-of-day when changing the calendar date
+                      const prev = new Date(workout.date)
+                      selectedDate.setHours(prev.getHours(), prev.getMinutes(), prev.getSeconds(), prev.getMilliseconds())
+                      setEditingDateValue(selectedDate)
+                      if (Platform.OS === 'android') handleSaveDate(selectedDate)
+                    }
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <View style={styles.dateEditActions}>
+                    <TouchableOpacity
+                      style={styles.dateEditBtn}
+                      onPress={() => { setEditingDate(false); setEditingDateValue(null) }}
+                    >
+                      <Text style={styles.dateEditBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.dateEditBtn}
+                      onPress={() => handleSaveDate()}
+                    >
+                      <Text style={styles.dateEditBtnText}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             ) : (
               <TouchableOpacity
                 onPress={() => {
-                  setEditingTitle(true)
-                  setEditingTitleValue(workout.name || formatFullDate(workout.date))
+                  setEditingDate(true)
+                  setEditingDateValue(new Date(workout.date))
                 }}
                 activeOpacity={0.7}
               >
                 <Text style={styles.title} numberOfLines={1}>
-                  {workout.name || formatFullDate(workout.date)}
+                  {formatSessionTitle(workout.date, titleIncludesTime)}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
 
-          <TouchableOpacity
-            onPress={handleDeleteWorkout}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.deleteBtn}
-          >
-            <Ionicons name="close-outline" size={26} color="#78716c" />
-          </TouchableOpacity>
+          {!editingDate && (
+            <TouchableOpacity
+              onPress={handleDeleteWorkout}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.deleteBtn}
+            >
+              <Ionicons name="close-outline" size={26} color="#78716c" />
+            </TouchableOpacity>
+          )}
         </View>
 
       </View>
@@ -678,14 +706,16 @@ const styles = StyleSheet.create({
   },
   titleContainer: { flex: 1 },
   title: { fontSize: 18, fontWeight: '700', color: '#1c1917' },
-  titleInput: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1c1917',
-    borderBottomWidth: 1,
-    paddingVertical: 0,
-  },
   deleteBtn: { padding: 4 },
+  dateEditContainer: { flex: 1, alignItems: 'center' },
+  dateEditActions: { flexDirection: 'row', gap: 16, marginTop: 8 },
+  dateEditBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#e7e5e4',
+  },
+  dateEditBtnText: { fontSize: 16, fontWeight: '500', color: '#1c1917' },
   content: { flex: 1 },
   contentInner: { padding: 24, paddingBottom: 32, backgroundColor: colors.detailBg },
   empty: {

@@ -17,7 +17,7 @@ import { colorTokens, space, radius, typography, shadow } from '../theme/tokens'
 import { colors } from '../theme/colors'
 import { apiRequest } from '../api/client'
 import type { Workout, PerformedExercise } from '../types/workout'
-import { formatNumber, formatWeight, formatMonthDay } from '../utils/format'
+import { formatNumber, formatWeight, formatSessionListTitle, calendarDayKey, daysWithMultipleSessions } from '../utils/format'
 import ArrowIcon from '../components/ArrowIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CreateSessionModal from '../components/CreateSessionModal'
@@ -97,6 +97,11 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
     }
     return ids.map((id) => ({ id, name: map.get(id) ?? '' }))
   }, [workouts])
+
+  const multiSessionDays = useMemo(
+    () => daysWithMultipleSessions(workouts.map((w) => w.date)),
+    [workouts],
+  )
 
   const safeIndex = Math.min(exerciseIndex, Math.max(0, exerciseColumns.length - 1))
   const selectedExercise = exerciseColumns[safeIndex] ?? null
@@ -298,8 +303,11 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                     activeOpacity={0.7}
                   >
                     <View style={styles.tdTitle}>
-                      <Text style={styles.rowTitle} numberOfLines={1}>
-                        {formatMonthDay(item.date)}
+                      <Text style={styles.rowTitle} numberOfLines={2}>
+                        {formatSessionListTitle(
+                          item.date,
+                          multiSessionDays.has(calendarDayKey(item.date)),
+                        )}
                       </Text>
                     </View>
                     <View style={styles.tdExercise}>
@@ -490,9 +498,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   tdTitle: {
-    width: 75,
+    width: 110,
     paddingVertical: 12,
-    paddingRight: 16,
+    paddingRight: 12,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     textAlign: 'right',
@@ -505,10 +513,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: typography.font.bodyBold,
     fontWeight: '700',
     color: '#1c1917',
+    textAlign: 'right',
   },
   dash: {
     fontSize: 17,

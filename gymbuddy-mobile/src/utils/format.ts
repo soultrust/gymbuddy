@@ -48,6 +48,50 @@ export const formatFullDateFromDate = (date: Date): string => {
   return `${weekdays[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
 }
 
+/** Local calendar day key for grouping sessions (YYYY-M-D). */
+export const calendarDayKey = (d: string | Date): string => {
+  const date = typeof d === 'string' ? new Date(d) : d
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+}
+
+/** e.g. "7:14 AM" */
+export const formatSessionTime = (d: string | Date): string => {
+  const date = typeof d === 'string' ? new Date(d) : d
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+/**
+ * Session display title from date.
+ * When includeTime is true (multiple sessions that calendar day):
+ * "FRI July 24, 2026 · 7:14 AM"
+ */
+export const formatSessionTitle = (d: string, includeTime = false): string => {
+  const base = formatFullDate(d)
+  return includeTime ? `${base} · ${formatSessionTime(d)}` : base
+}
+
+/**
+ * Compact list-column title: "7/24" or "7/24 · 7:14 AM" when same-day siblings exist.
+ */
+export const formatSessionListTitle = (d: string, includeTime = false): string => {
+  const base = formatMonthDay(d)
+  return includeTime ? `${base} · ${formatSessionTime(d)}` : base
+}
+
+/** Day keys that have more than one session. */
+export const daysWithMultipleSessions = (dates: Array<string | Date>): Set<string> => {
+  const counts = new Map<string, number>()
+  for (const d of dates) {
+    const key = calendarDayKey(d)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  const multi = new Set<string>()
+  for (const [key, n] of counts) {
+    if (n > 1) multi.add(key)
+  }
+  return multi
+}
+
 /** Format as "Sat, Feb 14, 2026" for session dropdown. */
 export const formatSessionDate = (d: string): string =>
   new Date(d).toLocaleDateString('en-US', {

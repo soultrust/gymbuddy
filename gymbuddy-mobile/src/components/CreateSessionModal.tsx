@@ -11,7 +11,6 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 
 import { Text, TextInput } from './AppText'
 import { apiRequest } from '../api/client'
-import { formatFullDateFromDate } from '../utils/format'
 import { useAccent } from '../contexts/AccentContext'
 import type { Workout, TemplateSource } from '../types/workout'
 import { formatSessionDate } from '../utils/format'
@@ -34,7 +33,6 @@ export default function CreateSessionModal({
   const { accent } = useAccent()
   const [createDate, setCreateDate] = useState(() => new Date())
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [createTitle, setCreateTitle] = useState(() => formatFullDateFromDate(new Date()))
   const [createNotes, setCreateNotes] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
@@ -44,15 +42,7 @@ export default function CreateSessionModal({
 
   useEffect(() => {
     if (visible) {
-      const today = new Date()
-      setCreateDate(today)
-      setCreateTitle(
-        today.toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        }),
-      )
+      setCreateDate(new Date())
       setCreateNotes('')
       setCreateError(null)
       setTemplateSource('previous')
@@ -74,10 +64,9 @@ export default function CreateSessionModal({
     setCreateError(null)
     setCreateSubmitting(true)
     try {
-      const dateISO = createDate.toISOString().slice(0, 10)
       const body: { date: string; name: string; notes: string; template_session_id?: number } = {
-        date: `${dateISO}T12:00:00.000Z`,
-        name: createTitle.trim(),
+        date: createDate.toISOString(),
+        name: '',
         notes: createNotes.trim() || '',
       }
       if (templateSource === 'previous') {
@@ -239,17 +228,6 @@ export default function CreateSessionModal({
 
             <View style={styles.templateSectionSpacer} />
 
-            <Text style={styles.inputLabel}>Title</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={createTitle}
-              onChangeText={setCreateTitle}
-              placeholder="e.g. Jul 23, 2026"
-              placeholderTextColor="#a8a29e"
-              editable={!createSubmitting}
-              returnKeyType="done"
-            />
-
             <Text style={styles.inputLabel}>Date</Text>
             <TouchableOpacity
               style={styles.modalInput}
@@ -274,7 +252,16 @@ export default function CreateSessionModal({
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(_event: unknown, selectedDate?: Date) => {
                     if (Platform.OS === 'android') setShowDatePicker(false)
-                    if (selectedDate) setCreateDate(selectedDate)
+                    if (selectedDate) {
+                      // Keep time-of-day so same-day sessions stay distinguishable
+                      selectedDate.setHours(
+                        createDate.getHours(),
+                        createDate.getMinutes(),
+                        createDate.getSeconds(),
+                        createDate.getMilliseconds(),
+                      )
+                      setCreateDate(selectedDate)
+                    }
                   }}
                 />
                 {Platform.OS === 'ios' && (

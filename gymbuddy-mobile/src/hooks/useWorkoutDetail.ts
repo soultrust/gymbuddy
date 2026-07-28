@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Animated, Keyboard } from 'react-native'
 
 import { apiRequest } from '../api/client'
@@ -9,7 +9,7 @@ import type {
   TemplateExercise,
   TemplateSetEntry,
 } from '../types/workout'
-import { formatNumber, formatWeight } from '../utils/format'
+import { formatNumber, formatWeight, calendarDayKey, daysWithMultipleSessions } from '../utils/format'
 import { setDecimalInput, parseReps, stepRepsValue } from '../utils/numberInput'
 
 export function useWorkoutDetail(
@@ -32,8 +32,6 @@ export function useWorkoutDetail(
   const [newSetWeight, setNewSetWeight] = useState('')
   const [newSetMinutes, setNewSetMinutes] = useState('0')
   const [newSetSeconds, setNewSetSeconds] = useState('0')
-  const [editingTitle, setEditingTitle] = useState(false)
-  const [editingTitleValue, setEditingTitleValue] = useState('')
   const [editingExerciseId, setEditingExerciseId] = useState<number | null>(null)
   const [editingExerciseName, setEditingExerciseName] = useState('')
   const [editingSetId, setEditingSetId] = useState<number | null>(null)
@@ -43,6 +41,8 @@ export function useWorkoutDetail(
   const [editingSetSeconds, setEditingSetSeconds] = useState('0')
   const [editingDate, setEditingDate] = useState(false)
   const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
+  /** All session dates — used to append time when multiple sessions share a day */
+  const [sessionDates, setSessionDates] = useState<string[]>([])
   /** Local drafts for note inputs; missing key → fall back to saved note_for_next_time */
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({})
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -99,11 +99,27 @@ export function useWorkoutDetail(
     }
   }, [token])
 
+  const fetchSessionDates = useCallback(async () => {
+    if (!token) return
+    try {
+      const data = await apiRequest<Workout[] | { results: Workout[] }>('/workouts/', { token })
+      const list = Array.isArray(data) ? data : (data.results ?? [])
+      setSessionDates(list.map((w) => w.date))
+    } catch {
+      setSessionDates([])
+    }
+  }, [token])
+
+  const titleIncludesTime = useMemo(() => {
+    if (!workout) return false
+    return daysWithMultipleSessions(sessionDates).has(calendarDayKey(workout.date))
+  }, [workout, sessionDates])
+
   useEffect(() => {
-    Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises()]).finally(() =>
+    Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises(), fetchSessionDates()]).finally(() =>
       setLoading(false),
     )
-  }, [fetchWorkout, fetchPrevious, fetchUserExercises])
+  }, [fetchWorkout, fetchPrevious, fetchUserExercises, fetchSessionDates])
 
   useEffect(() => {
     if (editingSetId !== null) {
@@ -240,7 +256,7 @@ export function useWorkoutDetail(
       })
       setEditingDate(false)
       setEditingDateValue(null)
-      await fetchWorkout()
+      await Promise.all([fetchWorkout(), fetchSessionDates()])
     } catch (e) {
       Alert.alert('Could not save date', e instanceof Error ? e.message : 'Please try again.')
     }
@@ -483,26 +499,6 @@ export function useWorkoutDetail(
     }
   }
 
-  const handleSaveTitle = async () => {
-    if (!token || !workout) return
-    const name = editingTitleValue.trim()
-    if (name === (workout.name ?? '').trim()) {
-      setEditingTitle(false)
-      return
-    }
-    try {
-      await apiRequest(`/workouts/${workoutId}/`, {
-        method: 'PATCH',
-        token,
-        body: { name },
-      })
-      setEditingTitle(false)
-      await fetchWorkout()
-    } catch (e) {
-      Alert.alert('Could not save title', (e as Error)?.message ?? 'Please try again.')
-    }
-  }
-
   const handleSaveExerciseName = async (pe: PerformedExercise) => {
     if (!token) return
     const name = editingExerciseName.trim()
@@ -544,7 +540,7 @@ export function useWorkoutDetail(
   const retry = () => {
     setFetchError(null)
     setLoading(true)
-    Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises()]).finally(() =>
+    Promise.all([fetchWorkout(), fetchPrevious(), fetchUserExercises(), fetchSessionDates()]).finally(() =>
       setLoading(false),
     )
   }
@@ -575,10 +571,6 @@ export function useWorkoutDetail(
     setNewSetMinutes,
     newSetSeconds,
     setNewSetSeconds,
-    editingTitle,
-    setEditingTitle,
-    editingTitleValue,
-    setEditingTitleValue,
     editingExerciseId,
     setEditingExerciseId,
     editingExerciseName,
@@ -597,6 +589,7 @@ export function useWorkoutDetail(
     setEditingDate,
     editingDateValue,
     setEditingDateValue,
+    titleIncludesTime,
     getNoteValue,
     setNoteDraft,
     fadeAnim,
@@ -617,7 +610,6 @@ export function useWorkoutDetail(
     handleDeleteExercise,
     confirmDeleteExercise,
     handleDeleteWorkout,
-    handleSaveTitle,
     handleSaveExerciseName,
     handleAddExercise,
     handleAddPastExercise,
