@@ -71,12 +71,8 @@ export default function WorkoutDetailScreen({
     setEditingSetMinutes,
     editingSetSeconds,
     setEditingSetSeconds,
-    expandedNotesFor,
-    setExpandedNotesFor,
-    editingNoteFor,
-    setEditingNoteFor,
-    getNotesFor,
-    setNotesFor,
+    getNoteValue,
+    setNoteDraft,
     fadeAnim,
     setWeightDecimal,
     setRepsDecimal,
@@ -385,67 +381,16 @@ export default function WorkoutDetailScreen({
                         ),
                       )}
 
-                      {pe.note_for_next_time && expandedNotesFor !== pe.id && (
-                        <View style={styles.noteReminder}>
-                          <Text style={styles.noteReminderText}>
-                            {pe.note_for_next_time}
-                          </Text>
-                        </View>
-                      )}
-
-                      {expandedNotesFor === pe.id && (
-                        <View style={styles.notesPanel}>
-                          {pe.note_for_next_time && editingNoteFor !== pe.id ? (
-                            // View mode — show saved note with pencil to edit
-                            <View style={styles.notesViewRow}>
-                              <Text style={styles.notesViewText}>
-                                {pe.note_for_next_time}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() => {
-                                  setNotesFor(pe.id, (prev) => ({
-                                    ...prev,
-                                    nextTimeNote: pe.note_for_next_time ?? '',
-                                  }))
-                                  setEditingNoteFor(pe.id)
-                                }}
-                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                style={styles.notesPencilBtn}
-                              >
-                                <Ionicons name="create-outline" size={20} color={accentDark} />
-                              </TouchableOpacity>
-                            </View>
-                          ) : (
-                            // Edit mode — TextInput with arrow submit button
-                            <View style={styles.notesInputRow}>
-                              <TextInput
-                                style={styles.notesInput}
-                                placeholder="e.g. Increase weight to 5 lbs"
-                                placeholderTextColor="#a8a29e"
-                                clearButtonMode="while-editing"
-                                returnKeyType="done"
-                                autoFocus={editingNoteFor === pe.id}
-                                value={getNotesFor(pe.id).nextTimeNote}
-                                onChangeText={(text) =>
-                                  setNotesFor(pe.id, (prev) => ({
-                                    ...prev,
-                                    nextTimeNote: text,
-                                  }))
-                                }
-                                onBlur={() => handleSaveNote(pe.id, pe.note_for_next_time)}
-                              />
-                              {getNotesFor(pe.id).nextTimeNote.length > 0 && (
-                                <TouchableOpacity
-                                  style={[styles.notesSubmitBtn, { backgroundColor: accent }]}
-                                  onPress={() => handleSaveNote(pe.id, pe.note_for_next_time)}
-                                >
-                                  <Ionicons name="chevron-forward" size={18} color="#fff" />
-                                </TouchableOpacity>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                      )}
+                      <TextInput
+                        style={styles.noteInput}
+                        placeholder="Add Note"
+                        placeholderTextColor="#a16207"
+                        clearButtonMode="while-editing"
+                        returnKeyType="done"
+                        value={getNoteValue(pe.id, pe.note_for_next_time)}
+                        onChangeText={(text) => setNoteDraft(pe.id, text)}
+                        onBlur={() => handleSaveNote(pe.id, pe.note_for_next_time)}
+                      />
 
                       <View style={styles.addSetNotesColumn}>
                         {addingSetFor === pe.id && (
@@ -568,21 +513,6 @@ export default function WorkoutDetailScreen({
                             }}
                           >
                             <Text style={[styles.addSetLink, { color: accentDark }]}>+ Add Set</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setNotesFor(pe.id, (prev) => ({
-                                ...prev,
-                                nextTimeNote: pe.note_for_next_time ?? '',
-                              }))
-                              setExpandedNotesFor(pe.id)
-                              if (!pe.note_for_next_time) {
-                                setEditingNoteFor(pe.id)
-                              }
-                            }}
-                            style={styles.notesLinkRow}
-                          >
-                            <Text style={[styles.notesLink, { color: accentDark }]}>+ Add Note</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -914,85 +844,23 @@ const styles = StyleSheet.create({
   },
   addSetNotesRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
-  },
-  notesLinkRow: { flexDirection: 'row', alignItems: 'center' },
-  notesLink: {
-    fontSize: 18,
-    fontFamily: typography.font.bodyBold,
-    fontWeight: '700',
   },
   cardBodyWrapper: {
     backgroundColor: '#fff4e6',
     padding: 16,
   },
-  notesPanel: { paddingTop: 8, paddingBottom: 4 },
-  notesFromLastTime: {
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: colors.setRowBg,
-    borderRadius: 8,
-  },
-  notesFromLastTimeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#78716c',
+  noteInput: {
+    marginTop: 8,
     marginBottom: 4,
-  },
-  notesFromLastTimeText: { fontSize: 14, color: '#44403c' },
-  notesViewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  notesViewText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#44403c',
-    lineHeight: 20,
-  },
-  notesPencilBtn: {
-    padding: 4,
-  },
-  notesInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  notesSubmitBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noteReminder: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     backgroundColor: '#f5ee90',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    marginBottom: 8,
-  },
-  noteReminderText: {
-    flex: 1,
     fontSize: 17,
     color: '#92400e',
     lineHeight: 22,
-  },
-  notesInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#d6d3d1',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
-    backgroundColor: '#fff',
   },
   addSectionsZone: {
     marginHorizontal: -24,

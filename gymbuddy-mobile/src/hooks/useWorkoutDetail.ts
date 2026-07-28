@@ -43,27 +43,15 @@ export function useWorkoutDetail(
   const [editingSetSeconds, setEditingSetSeconds] = useState('0')
   const [editingDate, setEditingDate] = useState(false)
   const [editingDateValue, setEditingDateValue] = useState<Date | null>(null)
-  const [expandedNotesFor, setExpandedNotesFor] = useState<number | null>(null)
-  const [editingNoteFor, setEditingNoteFor] = useState<number | null>(null)
-  const [exerciseNotes, setExerciseNotes] = useState<
-    Record<number, { todayNotes: string; nextTimeNote: string }>
-  >({})
+  /** Local drafts for note inputs; missing key → fall back to saved note_for_next_time */
+  const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({})
   const fadeAnim = useRef(new Animated.Value(0)).current
 
-  const getNotesFor = (peId: number) =>
-    exerciseNotes[peId] ?? { todayNotes: '', nextTimeNote: '' }
+  const getNoteValue = (peId: number, savedNote?: string | null) =>
+    peId in noteDrafts ? noteDrafts[peId] : (savedNote ?? '')
 
-  const setNotesFor = (
-    peId: number,
-    updater: (prev: { todayNotes: string; nextTimeNote: string }) => {
-      todayNotes: string
-      nextTimeNote: string
-    },
-  ) =>
-    setExerciseNotes((prev) => ({
-      ...prev,
-      [peId]: updater(prev[peId] ?? { todayNotes: '', nextTimeNote: '' }),
-    }))
+  const setNoteDraft = (peId: number, text: string) =>
+    setNoteDrafts((prev) => ({ ...prev, [peId]: text }))
 
   const fetchWorkout = useCallback(async () => {
     if (!token) return
@@ -532,14 +520,9 @@ export function useWorkoutDetail(
   }
 
   const handleSaveNote = async (peId: number, originalNote?: string | null) => {
-    const note = (getNotesFor(peId).nextTimeNote ?? '').trim()
+    const note = getNoteValue(peId, originalNote).trim()
     const original = (originalNote ?? '').trim()
-    if (note === original) {
-      // Unchanged — collapse to yellow read-only (or close if empty)
-      setEditingNoteFor(null)
-      setExpandedNotesFor(null)
-      return
-    }
+    if (note === original) return
     try {
       await apiRequest(`/performed-exercises/${peId}/note_for_next_time/`, {
         method: 'POST',
@@ -547,8 +530,12 @@ export function useWorkoutDetail(
         token,
       })
       await fetchWorkout()
-      setEditingNoteFor(null)
-      setExpandedNotesFor(null)
+      // Drop draft so input falls back to freshly saved value
+      setNoteDrafts((prev) => {
+        const next = { ...prev }
+        delete next[peId]
+        return next
+      })
     } catch (e) {
       Alert.alert('Could not save note', (e as Error)?.message ?? 'Please try again.')
     }
@@ -610,13 +597,8 @@ export function useWorkoutDetail(
     setEditingDate,
     editingDateValue,
     setEditingDateValue,
-    expandedNotesFor,
-    setExpandedNotesFor,
-    editingNoteFor,
-    setEditingNoteFor,
-    exerciseNotes,
-    getNotesFor,
-    setNotesFor,
+    getNoteValue,
+    setNoteDraft,
     fadeAnim,
     // helpers
     getLastSets,
