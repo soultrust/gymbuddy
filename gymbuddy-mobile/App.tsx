@@ -8,7 +8,7 @@ import { Oswald_500Medium } from '@expo-google-fonts/oswald'
 import { Lato_400Regular, Lato_700Bold } from '@expo-google-fonts/lato'
 
 import { AuthProvider, useAuth } from './src/contexts/AuthContext'
-import { TimerProvider } from './src/contexts/TimerContext'
+import { TimerProvider, useTimer } from './src/contexts/TimerContext'
 import { AccentProvider } from './src/contexts/AccentContext'
 import LoginScreen from './src/screens/LoginScreen'
 import WorkoutsScreen from './src/screens/WorkoutsScreen'
@@ -22,6 +22,7 @@ const Stack = createNativeStackNavigator()
 
 function AppNavigator() {
   const { token, isLoading } = useAuth()
+  const { isOverlayOpen } = useTimer()
   const isLoggedIn = !!token
 
   if (isLoading) {
@@ -30,8 +31,8 @@ function AppNavigator() {
 
   return (
     <>
-      {/* Persistent header — sits above the nav stack, never transitions */}
-      {isLoggedIn && <AppHeader />}
+      {/* Hide white header in timer mode so status bar isn't washed out */}
+      {isLoggedIn && !isOverlayOpen && <AppHeader />}
 
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -47,13 +48,15 @@ function AppNavigator() {
             <Stack.Screen name="Login" component={LoginScreen} />
           )}
         </Stack.Navigator>
-        {isLoggedIn && (
-          <>
-            <TimerOverlay />
-            <TimerFAB />
-          </>
-        )}
       </NavigationContainer>
+
+      {/* Full-window overlays — above nav + status bar area */}
+      {isLoggedIn && (
+        <>
+          <TimerOverlay />
+          <TimerFAB />
+        </>
+      )}
     </>
   )
 }

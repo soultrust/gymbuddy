@@ -138,9 +138,13 @@ export default function TimerOverlay() {
   }
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* White status bar icons on dark backdrop */}
-      <StatusBar barStyle="light-content" />
+    <View style={styles.root} pointerEvents="box-none">
+      {/* Light icons on dark timer backdrop — Android needs an explicit dark bg */}
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#0a0602"
+        translucent={false}
+      />
       {/* ── Dark backdrop (blocks touches to content below) ── */}
       <View style={styles.backdrop} />
 
@@ -406,6 +410,11 @@ export default function TimerOverlay() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  root: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 300,
+    elevation: 300,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(10, 6, 2, 0.92)',

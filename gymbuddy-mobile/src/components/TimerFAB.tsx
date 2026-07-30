@@ -37,7 +37,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 36,
     right: 24,
-    zIndex: 999,
+    zIndex: 400,
+    elevation: 400,
   },
   fab: {
     width: 68,
