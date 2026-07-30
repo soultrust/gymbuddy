@@ -900,12 +900,19 @@ const styles = StyleSheet.create({
   },
   addPastExerciseSection: { marginTop: 0 },
   addPastExerciseLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontFamily: typography.font.bodyBold,
+    fontWeight: '700',
     color: colors.cream,
     marginBottom: 8,
+    textTransform: 'none',
   },
-  addPastExerciseHint: { fontWeight: '400', color: colors.creamDark },
+  addPastExerciseHint: {
+    fontFamily: typography.font.body,
+    fontWeight: '400',
+    color: colors.creamDark,
+    textTransform: 'none',
+  },
   addPastExerciseList: { maxHeight: 200 },
   addPastExerciseItem: {
     paddingVertical: 8,
