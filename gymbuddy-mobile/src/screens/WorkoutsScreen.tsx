@@ -169,11 +169,13 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
           onPress={() => setCollapseEmpty((v) => !v)}
           activeOpacity={0.7}
         >
-          <Ionicons
-            name={collapseEmpty ? 'checkbox' : 'square-outline'}
-            size={22}
-            color={collapseEmpty ? accent : '#a8a29e'}
-          />
+          <View style={styles.checkboxShadow}>
+            <Ionicons
+              name={collapseEmpty ? 'checkbox' : 'square-outline'}
+              size={22}
+              color={collapseEmpty ? accent : '#a8a29e'}
+            />
+          </View>
           <Text style={styles.hideEmptyLabel} numberOfLines={1}>
             Hide days that have no data
           </Text>
@@ -189,13 +191,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
+        <View style={styles.tableWrap}>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
               <View style={styles.thExercise}>
@@ -235,39 +231,47 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
                 </TouchableOpacity>
               </View>
             </View>
-            {workouts
-              .filter(
-                (item) =>
-                  !selectedExercise ||
-                  !collapseEmpty ||
-                  getExerciseForWorkout(item, selectedExercise.id) != null,
-              )
-              .map((item) => {
-                const pe = selectedExercise
-                  ? getExerciseForWorkout(item, selectedExercise.id)
-                  : null
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.row}
-                    onPress={() =>
-                      navigation.navigate('WorkoutDetail', { workoutId: item.id })
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.tdTitle}>
-                      <Text style={styles.rowTitle} numberOfLines={2}>
-                        {formatSessionListTitle(item.date)}
-                      </Text>
-                    </View>
-                    <View style={styles.tdExercise}>
-                      {pe ? renderSetChips(pe) : <Text style={styles.dash}>—</Text>}
-                    </View>
-                  </TouchableOpacity>
+            <ScrollView
+              style={styles.tableScroll}
+              contentContainerStyle={styles.tableScrollContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              {workouts
+                .filter(
+                  (item) =>
+                    !selectedExercise ||
+                    !collapseEmpty ||
+                    getExerciseForWorkout(item, selectedExercise.id) != null,
                 )
-              })}
+                .map((item) => {
+                  const pe = selectedExercise
+                    ? getExerciseForWorkout(item, selectedExercise.id)
+                    : null
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.row}
+                      onPress={() =>
+                        navigation.navigate('WorkoutDetail', { workoutId: item.id })
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.tdTitle}>
+                        <Text style={styles.rowTitle} numberOfLines={2}>
+                          {formatSessionListTitle(item.date)}
+                        </Text>
+                      </View>
+                      <View style={styles.tdExercise}>
+                        {pe ? renderSetChips(pe) : <Text style={styles.dash}>—</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  )
+                })}
+            </ScrollView>
           </View>
-        </ScrollView>
+        </View>
       )}
     </View>
   )
@@ -278,8 +282,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.detailBg,
   },
-  scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
+  tableWrap: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -296,6 +303,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
   addSessionBtnText: {
     color: '#fff',
@@ -307,6 +319,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     flexShrink: 0,
+  },
+  checkboxShadow: {
+    borderRadius: 6,
+    backgroundColor: colors.cream,
+    padding: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
   hideEmptyLabel: {
     fontSize: 13,
@@ -333,6 +355,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   table: {
+    flex: 1,
     backgroundColor: colors.cream,
     borderRadius: 12,
     overflow: 'hidden',
@@ -341,6 +364,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 8,
+  },
+  tableScroll: {
+    flex: 1,
+  },
+  tableScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 8,
   },
   tableHeader: {
     flexDirection: 'row',
