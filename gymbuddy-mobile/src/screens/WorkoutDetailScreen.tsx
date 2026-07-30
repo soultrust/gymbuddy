@@ -94,6 +94,12 @@ export default function WorkoutDetailScreen({
   } = useWorkoutDetail(workoutId, token, navigation.goBack)
 
   const [measureUnitDropdownOpen, setMeasureUnitDropdownOpen] = useState(false)
+  /** Auto-grow heights for yellow note inputs (per performed-exercise id) */
+  const [noteHeights, setNoteHeights] = useState<Record<number, number>>({})
+
+  const NOTE_INPUT_MIN_HEIGHT = 40
+  const NOTE_INPUT_MAX_HEIGHT = 220
+  const NOTE_INPUT_V_PADDING = 16 // paddingVertical 8 × 2
 
   const formatDuration = (totalSeconds: number) => {
     const total = Math.round(Number(totalSeconds))
@@ -409,13 +415,29 @@ export default function WorkoutDetailScreen({
                       )}
 
                       <TextInput
-                        style={styles.noteInput}
+                        style={[
+                          styles.noteInput,
+                          {
+                            height: noteHeights[pe.id] ?? NOTE_INPUT_MIN_HEIGHT,
+                          },
+                        ]}
                         placeholder="Add Note"
                         placeholderTextColor="#a16207"
-                        clearButtonMode="while-editing"
-                        returnKeyType="done"
+                        multiline
+                        textAlignVertical="top"
+                        scrollEnabled={false}
                         value={getNoteValue(pe.id, pe.note_for_next_time)}
                         onChangeText={(text) => setNoteDraft(pe.id, text)}
+                        onContentSizeChange={(e) => {
+                          const contentH = e.nativeEvent.contentSize.height
+                          const next = Math.min(
+                            NOTE_INPUT_MAX_HEIGHT,
+                            Math.max(NOTE_INPUT_MIN_HEIGHT, contentH + NOTE_INPUT_V_PADDING),
+                          )
+                          setNoteHeights((prev) =>
+                            prev[pe.id] === next ? prev : { ...prev, [pe.id]: next },
+                          )
+                        }}
                         onBlur={() => handleSaveNote(pe.id, pe.note_for_next_time)}
                       />
 
@@ -890,6 +912,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#92400e',
     lineHeight: 22,
+    minHeight: 40,
   },
   addSectionsZone: {
     marginHorizontal: -24,
