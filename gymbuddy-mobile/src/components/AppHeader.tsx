@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import {
   Alert,
   Modal,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -10,10 +11,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { Text } from './AppText'
 import { useAuth } from '../contexts/AuthContext'
+import { useTimer } from '../contexts/TimerContext'
 import { colorTokens, space, radius, shadow, typography } from '../theme/tokens'
 
 export default function AppHeader() {
   const { logout } = useAuth()
+  const { isOverlayOpen } = useTimer()
   const insets = useSafeAreaInsets()
   const [showMenu, setShowMenu] = useState(false)
 
@@ -33,7 +36,21 @@ export default function AppHeader() {
 
   return (
     <>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <StatusBar
+        barStyle={isOverlayOpen ? 'light-content' : 'dark-content'}
+        backgroundColor={isOverlayOpen ? '#0a0602' : colorTokens.bg.surface}
+      />
+      {/* Status-bar strip: dark in timer mode so light icons stay legible */}
+      <View
+        style={[
+          styles.statusBarStrip,
+          {
+            height: insets.top,
+            backgroundColor: isOverlayOpen ? '#0a0602' : colorTokens.bg.surface,
+          },
+        ]}
+      />
+      <View style={styles.header}>
         <Text style={styles.title}>
           <Text style={styles.titleGym}>GYM</Text>
           <Text style={styles.titleBuddy}>BUDDY</Text>
@@ -90,11 +107,16 @@ export default function AppHeader() {
 }
 
 const styles = StyleSheet.create({
+  statusBarStrip: {
+    zIndex: 200,
+    elevation: 200,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: space.md,
+    paddingTop: space.md,
     paddingBottom: space.md,
     backgroundColor: colorTokens.bg.surface,
     borderBottomWidth: 1,
