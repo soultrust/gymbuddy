@@ -161,7 +161,7 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
           activeOpacity={0.8}
         >
           <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.addSessionBtnText}>Add New Session</Text>
+          <Text style={styles.addSessionBtnText}>New Session</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -174,7 +174,9 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
             size={22}
             color={collapseEmpty ? accent : '#a8a29e'}
           />
-          <Text style={styles.hideEmptyLabel}>Hide days that have no data</Text>
+          <Text style={styles.hideEmptyLabel} numberOfLines={1}>
+            Hide days that have no data
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -196,7 +198,6 @@ export default function WorkoutsScreen({ navigation }: NavProps) {
         >
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <View style={styles.thDateSpacer} />
               <View style={styles.thExercise}>
                 <TouchableOpacity
                   onPress={() => setExerciseIndex((i) => Math.max(0, i - 1))}
@@ -305,14 +306,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexShrink: 1,
-    maxWidth: '48%',
+    flexShrink: 0,
   },
   hideEmptyLabel: {
-    flexShrink: 1,
     fontSize: 13,
-    color: '#44403c',
+    color: '#fff',
     lineHeight: 18,
+    flexShrink: 0,
   },
   emptyState: {
     flex: 1,
@@ -347,18 +347,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tableHeader,
     alignItems: 'center',
   },
-  thDateSpacer: {
-    width: 110,
-  },
   thExercise: {
     flex: 1,
-    minWidth: 140,
+    width: '100%',
     paddingVertical: 12,
     paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   exerciseNameColumn: {
     flex: 1,
@@ -404,12 +401,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   tdTitle: {
-    width: 110,
+    width: 56,
     paddingVertical: 12,
-    paddingRight: 12,
+    paddingRight: 8,
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    textAlign: 'right',
   },
   tdExercise: {
     flex: 1,
